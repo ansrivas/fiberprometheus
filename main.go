@@ -53,11 +53,11 @@ func New(name string, buckets ...float64) *PrometheusStruct {
 	)
 	// prometheus.MustRegister(p.latency)
 
+	p.MetricsURL = "/metrics"
 	return &p
 }
 
 var (
-	p = fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())
 
 // p = fasthttpadaptor.NewFastHTTPHandler(
 // 	promhttp.HandlerFor(
@@ -82,12 +82,18 @@ var (
 // 	prometheus.MustRegister(errCnt)
 // }
 
-func (ps *PrometheusStruct) PrometheusHandler(c *fiber.Ctx) {
+func (ps *PrometheusStruct) prometheusHandler(c *fiber.Ctx) {
+	p := fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())
 	p(c.Fasthttp)
 
 }
 
-func (ps *PrometheusStruct) PrometheusMiddleware(ctx *fiber.Ctx) {
+func (ps *PrometheusStruct) RegisterHandler(app *fiber.App, url string) {
+	ps.MetricsURL = url
+	app.Get(ps.MetricsURL, ps.prometheusHandler)
+
+}
+func (ps *PrometheusStruct) Middleware(ctx *fiber.Ctx) {
 
 	start := time.Now()
 	me := string(ctx.Fasthttp.Method())
@@ -99,10 +105,9 @@ func (ps *PrometheusStruct) PrometheusMiddleware(ctx *fiber.Ctx) {
 	}
 
 	ctx.Next()
+
 	sc := ctx.Fasthttp.Response.StatusCode()
-
 	statusCode := strconv.Itoa(sc)
-
 	ps.reqs.WithLabelValues(statusCode, me, path).
 		Inc()
 
@@ -113,15 +118,11 @@ func (ps *PrometheusStruct) PrometheusMiddleware(ctx *fiber.Ctx) {
 func main() {
 	app := fiber.New()
 
-	promMiddleware := New("test-app")
-	promMiddleware.MetricsURL = "/metrics"
+	prometh := New("test-app")
+	prometh.RegisterHandler(app, "/metrics")
 
-	app.Use(promMiddleware.PrometheusMiddleware)
+	app.Use(prometh.Middleware)
 
-	p := fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())
-	app.Get(promMiddleware.MetricsURL, func(c *fiber.Ctx) {
-		p(c.Fasthttp)
-	})
 	app.Get("/", func(c *fiber.Ctx) {
 		c.Send("Hello, World!")
 	})
