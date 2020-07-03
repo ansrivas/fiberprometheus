@@ -1,4 +1,4 @@
-module github.com/ansrivas/prom-fiber
+module github.com/ansrivas/fiberprometheus
 
 go 1.14
 
