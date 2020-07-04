@@ -1,6 +1,6 @@
 # fiberprometheus
   
-A prometheus middleware for gofiber.
+Prometheus middleware for gofiber.
 
 ![Release](https://img.shields.io/github/release/ansrivas/fiberprometheus.svg)
 [![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)

@@ -49,8 +49,13 @@ func TestMiddleware(t *testing.T) {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "http_requests_total") {
+	if !strings.Contains(string(body), `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`) {
 		t.Fail()
 	}
-
+	if !strings.Contains(string(body), `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`) {
+		t.Fail()
+	}
+	if !strings.Contains(string(body), `http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`) {
+		t.Fail()
+	}
 }
