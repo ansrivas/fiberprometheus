@@ -1,10 +1,10 @@
 # FiberPrometheus
 
-![Release](https://img.shields.io/github/release/gofiber/csrf.svg)
+![Release](https://img.shields.io/github/release/ansrivas/fiberprometheus.svg)
 [![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
-![Test](https://github.com/gofiber/csrf/workflows/Test/badge.svg)
-![Security](https://github.com/gofiber/csrf/workflows/Security/badge.svg)
-![Linter](https://github.com/gofiber/csrf/workflows/Linter/badge.svg)
+![Test](https://github.com/ansrivas/fiberprometheus/workflows/Test/badge.svg)
+![Security](https://github.com/ansrivas/fiberprometheus/workflows/Security/badge.svg)
+![Linter](https://github.com/ansrivas/fiberprometheus/workflows/Linter/badge.svg)
 
 ### Install
 ```
