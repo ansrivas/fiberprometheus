@@ -13,9 +13,10 @@ import (
 
 // FiberPrometheus ...
 type FiberPrometheus struct {
-	counter    *prometheus.CounterVec
-	histogram  *prometheus.HistogramVec
-	defaultURL string
+	requestsTotal   *prometheus.CounterVec
+	requestDuration *prometheus.HistogramVec
+	requestInFlight *prometheus.GaugeVec
+	defaultURL      string
 }
 
 // New creates a new instance of FiberPrometheus middleware
@@ -36,10 +37,17 @@ func New(servicename string) *FiberPrometheus {
 		[]string{"status_code", "method", "path"},
 	)
 
+	gauge := promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name:        "http_requests_in_progress_total",
+		Help:        "All the requests in progress",
+		ConstLabels: prometheus.Labels{"service": servicename},
+	}, []string{"method", "path"})
+
 	return &FiberPrometheus{
-		counter:    counter,
-		histogram:  histogram,
-		defaultURL: "/metrics",
+		requestsTotal:   counter,
+		requestDuration: histogram,
+		requestInFlight: gauge,
+		defaultURL:      "/metrics",
 	}
 }
 
@@ -66,13 +74,16 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) {
 		return
 	}
 
+	ps.requestInFlight.WithLabelValues(method, path).Inc()
 	ctx.Next()
+	ps.requestInFlight.WithLabelValues(method, path).Dec()
 
 	statusCode := strconv.Itoa(ctx.Fasthttp.Response.StatusCode())
-	ps.counter.WithLabelValues(statusCode, method, path).
+	ps.requestsTotal.WithLabelValues(statusCode, method, path).
 		Inc()
 
 	elapsed := float64(time.Since(start).Nanoseconds()) / 1000000000
-	ps.histogram.WithLabelValues(statusCode, method, path).
+	ps.requestDuration.WithLabelValues(statusCode, method, path).
 		Observe(elapsed)
+
 }
