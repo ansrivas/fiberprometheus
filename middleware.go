@@ -11,10 +11,11 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
+// FiberPrometheus ...
 type FiberPrometheus struct {
 	counter    *prometheus.CounterVec
 	histogram  *prometheus.HistogramVec
-	DefaultURL string
+	defaultURL string
 }
 
 // New creates a new instance of FiberPrometheus middleware
@@ -38,7 +39,7 @@ func New(servicename string) *FiberPrometheus {
 	return &FiberPrometheus{
 		counter:    counter,
 		histogram:  histogram,
-		DefaultURL: "/metrics",
+		defaultURL: "/metrics",
 	}
 }
 
@@ -49,8 +50,8 @@ func (ps *FiberPrometheus) handler(c *fiber.Ctx) {
 
 // RegisterAt will register the prometheus handler at a given URL
 func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string) {
-	ps.DefaultURL = url
-	app.Get(ps.DefaultURL, ps.handler)
+	ps.defaultURL = url
+	app.Get(ps.defaultURL, ps.handler)
 }
 
 // Middleware is the actual default middleware implementation
@@ -60,7 +61,7 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) {
 	method := string(ctx.Fasthttp.Method())
 	path := string(ctx.Fasthttp.Path())
 
-	if path == ps.DefaultURL {
+	if path == ps.defaultURL {
 		ctx.Next()
 		return
 	}
