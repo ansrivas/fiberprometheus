@@ -49,13 +49,57 @@ func TestMiddleware(t *testing.T) {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	if !strings.Contains(string(body), `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`) {
+	got := string(body)
+	want := `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+
+	}
+}
+
+func TestMiddlewareWithServiceName(t *testing.T) {
+	app := fiber.New()
+
+	prometheus := NewWith("test-service", "my_service", "http")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
+	app.Get("/", func(c *fiber.Ctx) {
+		c.Send("Hello World")
+	})
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req)
+	if resp.StatusCode != 200 {
 		t.Fail()
 	}
-	if !strings.Contains(string(body), `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`) {
-		t.Fail()
+
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	resp, _ = app.Test(req)
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	got := string(body)
+	want := `my_service_http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
 	}
-	if !strings.Contains(string(body), `http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`) {
-		t.Fail()
+
+	want = `my_service_http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `my_service_http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
 	}
 }

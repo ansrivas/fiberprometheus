@@ -19,18 +19,17 @@ type FiberPrometheus struct {
 	defaultURL      string
 }
 
-// New creates a new instance of FiberPrometheus middleware
-func New(servicename string) *FiberPrometheus {
+func create(servicename, namespace, subsystem string) *FiberPrometheus {
 	counter := promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        "http_requests_total",
+			Name:        prometheus.BuildFQName(namespace, subsystem, "requests_total"),
 			Help:        "Count all http requests by status code, method and path.",
 			ConstLabels: prometheus.Labels{"service": servicename},
 		},
 		[]string{"status_code", "method", "path"},
 	)
 	histogram := promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "http_request_duration_seconds",
+		Name:        prometheus.BuildFQName(namespace, subsystem, "request_duration_seconds"),
 		Help:        "Duration of all HTTP requests by status code, method and path.",
 		ConstLabels: prometheus.Labels{"service": servicename},
 	},
@@ -38,7 +37,7 @@ func New(servicename string) *FiberPrometheus {
 	)
 
 	gauge := promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name:        "http_requests_in_progress_total",
+		Name:        prometheus.BuildFQName(namespace, subsystem, "requests_in_progress_total"),
 		Help:        "All the requests in progress",
 		ConstLabels: prometheus.Labels{"service": servicename},
 	}, []string{"method", "path"})
@@ -49,6 +48,22 @@ func New(servicename string) *FiberPrometheus {
 		requestInFlight: gauge,
 		defaultURL:      "/metrics",
 	}
+}
+
+// New creates a new instance of FiberPrometheus middleware
+// servicename is available as a const label
+func New(servicename string) *FiberPrometheus {
+	return create(servicename, "http", "")
+}
+
+// NewWith creates a new instance of FiberPrometheus middleware but with an ability
+// to pass namespace and a custom subsystem
+// Here servicename is created as a constant-label for the metrics
+// Namespace, subsystem get prefixed to the metrics.
+// For e.g namespace = "my_app", subsyste = "http" then then metrics would be
+// my_app_http_requests_total{...,"service": servicename}
+func NewWith(servicename, namespace, subsystem string) *FiberPrometheus {
+	return create(servicename, namespace, subsystem)
 }
 
 func (ps *FiberPrometheus) handler(c *fiber.Ctx) {
