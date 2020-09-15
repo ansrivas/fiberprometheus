@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 )
 
 func TestMiddleware(t *testing.T) {
@@ -35,8 +35,8 @@ func TestMiddleware(t *testing.T) {
 	prometheus := New("test-service")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
-	app.Get("/", func(c *fiber.Ctx) {
-		c.Send("Hello World")
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
 	resp, _ := app.Test(req)
@@ -73,8 +73,8 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 	prometheus := NewWith("test-service", "my_service", "http")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
-	app.Get("/", func(c *fiber.Ctx) {
-		c.Send("Hello World")
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
 	resp, _ := app.Test(req)

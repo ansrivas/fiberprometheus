@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/adaptor/v2"
+	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
 // FiberPrometheus ...
@@ -66,34 +66,31 @@ func NewWith(servicename, namespace, subsystem string) *FiberPrometheus {
 	return create(servicename, namespace, subsystem)
 }
 
-func (ps *FiberPrometheus) handler(c *fiber.Ctx) {
-	p := fasthttpadaptor.NewFastHTTPHandler(promhttp.Handler())
-	p(c.Fasthttp)
-}
-
 // RegisterAt will register the prometheus handler at a given URL
 func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string) {
 	ps.defaultURL = url
-	app.Get(ps.defaultURL, ps.handler)
+	app.Get(ps.defaultURL, adaptor.HTTPHandler(promhttp.Handler()))
 }
 
 // Middleware is the actual default middleware implementation
-func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) {
+func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	start := time.Now()
-	method := string(ctx.Fasthttp.Method())
-	path := string(ctx.Fasthttp.Path())
+	method := string(ctx.Method())
+	path := string(ctx.Path())
 
 	if path == ps.defaultURL {
-		ctx.Next()
-		return
+		return ctx.Next()
+
 	}
 
 	ps.requestInFlight.WithLabelValues(method, path).Inc()
-	ctx.Next()
+	if err := ctx.Next(); err != nil {
+		return err
+	}
 	ps.requestInFlight.WithLabelValues(method, path).Dec()
 
-	statusCode := strconv.Itoa(ctx.Fasthttp.Response.StatusCode())
+	statusCode := strconv.Itoa(ctx.Response().StatusCode())
 	ps.requestsTotal.WithLabelValues(statusCode, method, path).
 		Inc()
 
@@ -101,4 +98,5 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) {
 	ps.requestDuration.WithLabelValues(statusCode, method, path).
 		Observe(elapsed)
 
+	return nil
 }
