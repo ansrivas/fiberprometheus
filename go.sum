@@ -39,6 +39,7 @@ github.com/gofiber/fiber/v2 v2.0.5 h1:CGf7XRGfmeyEiRrA4AbOCd3FGBiPYWWGr49WH3F3sy
 github.com/gofiber/fiber/v2 v2.0.5/go.mod h1:VyfrlfcUCW0TcO5uaLHVlxZ8N25BgwnP6YjkzJmJP24=
 github.com/gofiber/fiber/v2 v2.0.6 h1:eq1LGUM8arRCWxjQPvQzJJIRKDsc7Up/kxaSCUP6PIo=
 github.com/gofiber/fiber/v2 v2.0.6/go.mod h1:VyfrlfcUCW0TcO5uaLHVlxZ8N25BgwnP6YjkzJmJP24=
+github.com/gofiber/fiber/v2 v2.1.0/go.mod h1:aG+lMkwy3LyVit4CnmYUbUdgjpc3UYOltvlJZ78rgQ0=
 github.com/gofiber/utils v0.0.10 h1:3Mr7X7JdCUo7CWf/i5sajSaDmArEDtti8bM1JUVso2U=
 github.com/gofiber/utils v0.0.10/go.mod h1:9J5aHFUIjq0XfknT4+hdSMG6/jzfaAgCu4HEbWDeBlo=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
@@ -145,6 +146,7 @@ golang.org/x/sys v0.0.0-20200915050820-6d893a6b696e h1:RGS7MuoO4EeRp68J5OWuANAi5
 golang.org/x/sys v0.0.0-20200915050820-6d893a6b696e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200929083018-4d22bbb62b3c h1:/h0vtH0PyU0xAoZJVcRw1k0Ng+U0JAy3QDiFmppIlIE=
 golang.org/x/sys v0.0.0-20200929083018-4d22bbb62b3c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20190114222345-bf090417da8b/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20190226205152-f727befe758c/go.mod h1:9Yl7xja0Znq3iFh3HoIrodX9oNMXvdceNzlUR8zjMvY=
