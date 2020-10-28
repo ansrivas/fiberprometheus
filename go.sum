@@ -68,6 +68,7 @@ github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/me
 github.com/gofiber/adaptor/v2 v2.0.0 h1:kcAcMGIAbbQXD5NXoDDiBnxGwYJ/1F7Vra8vI6BT5IA=
 github.com/gofiber/adaptor/v2 v2.0.0/go.mod h1:Sjf+CsijkUDob59UslPtFliSdHgC2Y3SjtIROp+Vdd8=
 github.com/gofiber/adaptor/v2 v2.0.1/go.mod h1:Hn255OIJFLVAfGmievRC9CBE49FiKlf4LkgnEqi7mxc=
+github.com/gofiber/adaptor/v2 v2.0.2/go.mod h1:6Q7cMnEZHF58B+7BT2gpW98ixc/fmZ16xQOAI6Aw++g=
 github.com/gofiber/fiber/v2 v2.0.0 h1:YF2BcEO7aJtIR84QjfMzxwEVsbOmh2xFzPlNvX53hTs=
 github.com/gofiber/fiber/v2 v2.0.0/go.mod h1:GeIpT8VILgZt3Tn6gATjwb39Ff8OdM0qnZ2grAA0Vts=
 github.com/gofiber/fiber/v2 v2.0.1 h1:82Sw1SyHrEaKLYdXbNJGzI/t2okEeDIuw9nJGKpQmaI=
