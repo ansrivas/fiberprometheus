@@ -88,6 +88,7 @@ github.com/gofiber/fiber/v2 v2.1.1/go.mod h1:tpaJo8bDmDBffw1es3SugTtc6l7oC9EuVaA
 github.com/gofiber/fiber/v2 v2.1.2/go.mod h1:jMNH7iuOJ1AGdoJrx1OwaZIX7SOrQUtJi9R35QWhi4s=
 github.com/gofiber/fiber/v2 v2.1.3/go.mod h1:MMiSv1HrDkN8Pv7NeVDYK+T/lwXOEKAvPBbLvJPCEfA=
 github.com/gofiber/fiber/v2 v2.1.4/go.mod h1:YjN8skLvMICBTHLK3a5AJVsokZet6xTRs5axSP9aK1s=
+github.com/gofiber/fiber/v2 v2.2.0/go.mod h1:Slpou87elSO9qom9nwIo/IoQJ2qfRuMAQ/qQ9F0o4b0=
 github.com/gofiber/utils v0.0.10 h1:3Mr7X7JdCUo7CWf/i5sajSaDmArEDtti8bM1JUVso2U=
 github.com/gofiber/utils v0.0.10/go.mod h1:9J5aHFUIjq0XfknT4+hdSMG6/jzfaAgCu4HEbWDeBlo=
 github.com/gogo/googleapis v1.1.0/go.mod h1:gf4bu3Q80BeJ6H1S1vYPm8/ELATdvryBaNFGgqEef3s=
