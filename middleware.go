@@ -85,10 +85,12 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	}
 
 	ps.requestInFlight.WithLabelValues(method, path).Inc()
+	defer func() {
+		ps.requestInFlight.WithLabelValues(method, path).Dec()
+	}()
 	if err := ctx.Next(); err != nil {
 		return err
 	}
-	ps.requestInFlight.WithLabelValues(method, path).Dec()
 
 	statusCode := strconv.Itoa(ctx.Response().StatusCode())
 	ps.requestsTotal.WithLabelValues(statusCode, method, path).
