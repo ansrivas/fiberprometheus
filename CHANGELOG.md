@@ -1,5 +1,11 @@
 ## Change Log
 ---
+## [2020-11-27] - v2.0.1
+### Enhancements:
+- Bug Fix: RequestInFlight won't decrease if ctx.Next() return error
+- Bumped gofiber to v2.2.1
+- Use go 1.15
+
 ## [2020-09-15] - v2.0.0
 ### Enhancements:
 - Support gofiber-v2
