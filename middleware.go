@@ -19,19 +19,27 @@ type FiberPrometheus struct {
 	defaultURL      string
 }
 
-func create(servicename, namespace, subsystem string) *FiberPrometheus {
+func create(servicename, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
+	constLabels := make(prometheus.Labels)
+	if servicename != "" {
+		constLabels["service"] = servicename
+	}
+	for label, value := range labels {
+		constLabels[label] = value
+	}
+
 	counter := promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        prometheus.BuildFQName(namespace, subsystem, "requests_total"),
 			Help:        "Count all http requests by status code, method and path.",
-			ConstLabels: prometheus.Labels{"service": servicename},
+			ConstLabels: constLabels,
 		},
 		[]string{"status_code", "method", "path"},
 	)
 	histogram := promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:        prometheus.BuildFQName(namespace, subsystem, "request_duration_seconds"),
 		Help:        "Duration of all HTTP requests by status code, method and path.",
-		ConstLabels: prometheus.Labels{"service": servicename},
+		ConstLabels: constLabels,
 	},
 		[]string{"status_code", "method", "path"},
 	)
@@ -39,7 +47,7 @@ func create(servicename, namespace, subsystem string) *FiberPrometheus {
 	gauge := promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name:        prometheus.BuildFQName(namespace, subsystem, "requests_in_progress_total"),
 		Help:        "All the requests in progress",
-		ConstLabels: prometheus.Labels{"service": servicename},
+		ConstLabels: constLabels,
 	}, []string{"method", "path"})
 
 	return &FiberPrometheus{
@@ -53,17 +61,30 @@ func create(servicename, namespace, subsystem string) *FiberPrometheus {
 // New creates a new instance of FiberPrometheus middleware
 // servicename is available as a const label
 func New(servicename string) *FiberPrometheus {
-	return create(servicename, "http", "")
+	return create(servicename, "http", "", nil)
 }
 
 // NewWith creates a new instance of FiberPrometheus middleware but with an ability
 // to pass namespace and a custom subsystem
 // Here servicename is created as a constant-label for the metrics
 // Namespace, subsystem get prefixed to the metrics.
+//
 // For e.g namespace = "my_app", subsyste = "http" then then metrics would be
-// my_app_http_requests_total{...,"service": servicename}
+// `my_app_http_requests_total{...,service= "servicename"}`
 func NewWith(servicename, namespace, subsystem string) *FiberPrometheus {
-	return create(servicename, namespace, subsystem)
+	return create(servicename, namespace, subsystem, nil)
+}
+
+// NewWithLabels creates a new instance of FiberPrometheus middleware but with an ability
+// to pass namespace and a custom subsystem
+// Here labels are created as a constant-labels for the metrics
+// Namespace, subsystem get prefixed to the metrics.
+//
+// For e.g namespace = "my_app", subsystem = "http" and lables = map[string]string{"key1": "value1", "key2":"value2"}
+// then then metrics would become
+// `my_app_http_requests_total{...,key1= "value1", key2= "value2" }``
+func NewWithLabels(labels map[string]string, namespace, subsystem string) *FiberPrometheus {
+	return create("", namespace, subsystem, labels)
 }
 
 // RegisterAt will register the prometheus handler at a given URL

@@ -70,7 +70,7 @@ func TestMiddleware(t *testing.T) {
 func TestMiddlewareWithServiceName(t *testing.T) {
 	app := fiber.New()
 
-	prometheus := NewWith("test-service", "my_service", "http")
+	prometheus := NewWith("unique-service", "my_service_with_name", "http")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -88,17 +88,58 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	got := string(body)
-	want := `my_service_http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
+	want := `my_service_with_name_http_requests_total{method="GET",path="/",service="unique-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `my_service_http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
+	want = `my_service_with_name_http_request_duration_seconds_count{method="GET",path="/",service="unique-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `my_service_http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`
+	want = `my_service_with_name_http_requests_in_progress_total{method="GET",path="/",service="unique-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+}
+
+func TestMiddlewareWithLabels(t *testing.T) {
+	app := fiber.New()
+
+	constLabels := map[string]string{
+		"customkey1": "customvalue1",
+		"customkey2": "customvalue2",
+	}
+	prometheus := NewWithLabels(constLabels, "my_service", "http")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	resp, _ = app.Test(req)
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	got := string(body)
+	want := `my_service_http_requests_total{customkey1="customvalue1",customkey2="customvalue2",method="GET",path="/",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `my_service_http_request_duration_seconds_count{customkey1="customvalue1",customkey2="customvalue2",method="GET",path="/",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `my_service_http_requests_in_progress_total{customkey1="customvalue1",customkey2="customvalue2",method="GET",path="/"} 0`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}

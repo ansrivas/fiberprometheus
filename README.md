@@ -9,6 +9,7 @@ Prometheus middleware for gofiber.
 ![Linter](https://github.com/ansrivas/fiberprometheus/workflows/Linter/badge.svg)
 
 Following metrices are available by default:
+
 ```
 http_requests_total
 http_request_duration_seconds
@@ -16,12 +17,14 @@ http_requests_in_progress_total
 ```
 
 ### Install v2
+
 ```
 go get -u github.com/gofiber/fiber/v2
 go get -u github.com/ansrivas/fiberprometheus/v2
 ```
 
 ### Example using v2
+
 ```go
 package main
 
@@ -35,6 +38,10 @@ func main() {
 
   // This here will appear as a label, one can also use
   // fiberprometheus.NewWith(servicename, namespace, subsystem )
+  // or
+  // NOTE: Following is not available in v1
+  // labels := map[string]string{"custom_label1":"custom_value1", "custom_label2":"custom_value2"}
+  // fiberprometheus.NewWithLabels(labels, namespace, subsystem )
   prometheus := fiberprometheus.New("my-service-name")
   prometheus.RegisterAt(app, "/metrics")
   app.Use(prometheus.Middleware)
@@ -50,7 +57,9 @@ func main() {
   app.Listen(":3000")
 }
 ```
+
 ### Example using V1
+
 ```go
 package main
 
@@ -79,6 +88,8 @@ func main() {
   app.Listen(3000)
 }
 ```
+
 ### Result
+
 - Hit the default url at http://localhost:3000
 - Navigate to http://localhost:3000/metrics

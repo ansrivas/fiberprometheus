@@ -1,5 +1,11 @@
-## Change Log
+## ChangeLog
 ---
+
+## [2021-01-18] - v2.1.0
+### Enhancements:
+- New method `NewWithLabels` now accepts a `map[string]string` so that users can create custom labels easily.
+- Bumped gofiber to v2.3.3
+
 ## [2020-11-27] - v2.0.1
 ### Enhancements:
 - Bug Fix: RequestInFlight won't decrease if ctx.Next() return error
@@ -19,3 +25,4 @@
 ## [2020-07-08] - 0.3.0
 ### Enhancements:
 - Support a new method to provide a namespace and a subsystem for the service
+
