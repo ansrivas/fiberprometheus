@@ -1,5 +1,9 @@
 ## ChangeLog
 ---
+## [2021-03-29] - v2.1.2
+### Bug Fix:
+- Fixes #39, thanks @sunhailin-Leo
+
 ## [2021-02-08] - v2.1.1
 ### Enhancements:
 - Fix the LICENSE headers and introduce MIT License
