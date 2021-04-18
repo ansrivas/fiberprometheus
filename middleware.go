@@ -123,7 +123,6 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	if path == ps.defaultURL {
 		return ctx.Next()
-
 	}
 
 	ps.requestInFlight.WithLabelValues(method, path).Inc()
