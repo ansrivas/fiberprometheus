@@ -77,7 +77,7 @@ func create(servicename, namespace, subsystem string, labels map[string]string) 
 			0.00001, // 10µs
 			0.00002,
 			0.00005,
-			0.00001, // 100µs
+			0.0001, // 100µs
 			0.0002,
 			0.0005,
 			0.001, // 1ms
