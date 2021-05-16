@@ -93,3 +93,7 @@ func main() {
 
 - Hit the default url at http://localhost:3000
 - Navigate to http://localhost:3000/metrics
+
+### Grafana Board
+
+- https://grafana.com/grafana/dashboards/14331
