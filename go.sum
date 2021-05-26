@@ -65,9 +65,8 @@ github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
-github.com/gofiber/adaptor/v2 v2.1.3 h1:Lcf6gJH+hMFDdN7P8NKgBLye0pkHXg13jL8+9krJHuY=
-github.com/gofiber/adaptor/v2 v2.1.3/go.mod h1:B7m934AP/dYgqv06b3m0i/4Yvt5l2u5hZLKlBMzpZeM=
-github.com/gofiber/fiber/v2 v2.9.0/go.mod h1:Ah3IJikrKNRepl/HuVawppS25X7FWohwfCSRn7kJG28=
+github.com/gofiber/adaptor/v2 v2.1.4 h1:XSrQ/OcDHR/uhgVnaEPZANtHQz5IW4BGlVC7r5aGRAI=
+github.com/gofiber/adaptor/v2 v2.1.4/go.mod h1:tfXerQDcS7OslsK3+fUWnxVg9uUt2iORr3RLlGlrV6U=
 github.com/gofiber/fiber/v2 v2.10.0 h1:cYwonWaFVa7wBd/LKhgKu7mFNg2CHv5ztY6gzXtrvW8=
 github.com/gofiber/fiber/v2 v2.10.0/go.mod h1:Ah3IJikrKNRepl/HuVawppS25X7FWohwfCSRn7kJG28=
 github.com/gofiber/utils v0.1.2 h1:1SH2YEz4RlNS0tJlMJ0bGwO0JkqPqvq6TbHK9tXZKtk=
