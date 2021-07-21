@@ -154,8 +154,8 @@ func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string) {
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	start := time.Now()
-	method := string(ctx.Context().Method())
-	path := string(ctx.Context().Path())
+	method := ctx.Route().Method
+	path := ctx.Route().Path
 
 	if path == ps.defaultURL {
 		return ctx.Next()
