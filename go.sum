@@ -21,9 +21,8 @@ github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
-github.com/gofiber/adaptor/v2 v2.1.8 h1:L0RTrWxUhIVewoyNIxBq3bdDKYkyU+WV81z3u02gGXE=
-github.com/gofiber/adaptor/v2 v2.1.8/go.mod h1:/tbEfdtz48ws2snHASUbCLHDKCtLKJjpbToQN20MMJQ=
-github.com/gofiber/fiber/v2 v2.14.0/go.mod h1:oZTLWqYnqpMMuF922SjGbsYZsdpE1MCfh416HNdweIM=
+github.com/gofiber/adaptor/v2 v2.1.9 h1:gMxhy/RIdFdkSY/2ihQaTe6HF5wyAiGGVud8TFXFNxA=
+github.com/gofiber/adaptor/v2 v2.1.9/go.mod h1:MNWEAH0/OWWZ4aJAznC32IOruwESN/APHe1yZRiodw8=
 github.com/gofiber/fiber/v2 v2.16.0 h1:Bly40vAh4qofpCoVYGLYC0TS9lNGNA1OVSPuzhIK7Q8=
 github.com/gofiber/fiber/v2 v2.16.0/go.mod h1:iftruuHGkRYGEXVISmdD7HTYWyfS2Bh+Dkfq4n/1Owg=
 github.com/gofiber/utils v0.1.2 h1:1SH2YEz4RlNS0tJlMJ0bGwO0JkqPqvq6TbHK9tXZKtk=
@@ -102,8 +101,9 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
-github.com/valyala/fasthttp v1.26.0 h1:k5Tooi31zPG/g8yS6o2RffRO2C9B9Kah9SY8j/S7058=
 github.com/valyala/fasthttp v1.26.0/go.mod h1:cmWIqlu99AO/RKcp1HWaViTqc57FswJOfYYdPJBl8BA=
+github.com/valyala/fasthttp v1.28.0 h1:ruVmTmZaBR5i67NqnjvvH5gEv0zwHfWtbjoyW98iho4=
+github.com/valyala/fasthttp v1.28.0/go.mod h1:cmWIqlu99AO/RKcp1HWaViTqc57FswJOfYYdPJBl8BA=
 github.com/valyala/tcplisten v1.0.0 h1:rBHj/Xf+E1tRGZyWIWwJDiRY0zc1Js+CV5DqwacVSA8=
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
