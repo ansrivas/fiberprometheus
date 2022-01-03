@@ -4,6 +4,6 @@ go 1.16
 
 require (
 	github.com/gofiber/adaptor/v2 v2.1.15
-	github.com/gofiber/fiber/v2 v2.23.0
+	github.com/gofiber/fiber/v2 v2.24.0
 	github.com/prometheus/client_golang v1.11.0
 )
