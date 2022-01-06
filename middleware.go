@@ -115,6 +115,16 @@ func create(servicename, namespace, subsystem string, labels map[string]string) 
 	}
 }
 
+func (ps *FiberPrometheus) update(statusCode string, method string, path string, start time.Time) {
+	ps.requestsTotal.WithLabelValues(statusCode, method, path).
+		Inc()
+
+	elapsed := float64(time.Since(start).Nanoseconds()) / 1000000000
+	ps.requestDuration.WithLabelValues(statusCode, method, path).
+		Observe(elapsed)
+
+}
+
 // New creates a new instance of FiberPrometheus middleware
 // servicename is available as a const label
 func New(servicename string) *FiberPrometheus {
@@ -150,6 +160,11 @@ func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string) {
 	app.Get(ps.defaultURL, adaptor.HTTPHandler(promhttp.Handler()))
 }
 
+// Handler returns the underlying promhttp handler wrapped in gofiber/adaptor
+func (ps *FiberPrometheus) Handler() func(*fiber.Ctx) error {
+	return adaptor.HTTPHandler(promhttp.Handler())
+}
+
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
@@ -166,16 +181,15 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 		ps.requestInFlight.WithLabelValues(method, path).Dec()
 	}()
 	if err := ctx.Next(); err != nil {
+		if e, ok := err.(*fiber.Error); ok {
+			statusCode := strconv.Itoa(e.Code)
+			ps.update(statusCode, method, path, start)
+		}
 		return err
 	}
 
 	statusCode := strconv.Itoa(ctx.Response().StatusCode())
-	ps.requestsTotal.WithLabelValues(statusCode, method, path).
-		Inc()
-
-	elapsed := float64(time.Since(start).Nanoseconds()) / 1000000000
-	ps.requestDuration.WithLabelValues(statusCode, method, path).
-		Observe(elapsed)
+	ps.update(statusCode, method, path, start)
 
 	return nil
 }
