@@ -40,6 +40,16 @@ type FiberPrometheus struct {
 	defaultURL      string
 }
 
+// Register FiberPrometheus Collectors to
+// a custom Registry
+func (fp *FiberPrometheus) MustRegister(registry *prometheus.Registry) {
+	registry.MustRegister(
+		fp.requestsTotal,
+		fp.requestDuration,
+		fp.requestInFlight,
+	)
+}
+
 func create(servicename, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
 	constLabels := make(prometheus.Labels)
 	if servicename != "" {
