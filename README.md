@@ -8,7 +8,7 @@ Prometheus middleware for gofiber.
 ![Security](https://github.com/ansrivas/fiberprometheus/workflows/Security/badge.svg)
 ![Linter](https://github.com/ansrivas/fiberprometheus/workflows/Linter/badge.svg)
 
-Following metrices are available by default:
+Following metrics are available by default:
 
 ```
 http_requests_total

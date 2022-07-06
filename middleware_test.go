@@ -39,14 +39,35 @@ func TestMiddleware(t *testing.T) {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
+	app.Get("/error/:type", func(ctx *fiber.Ctx) error {
+		switch ctx.Params("type") {
+		case "fiber":
+			return fiber.ErrBadRequest
+		default:
+			return fiber.ErrInternalServerError
+		}
+
+	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req)
+	resp, _ := app.Test(req, -1)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
+	req = httptest.NewRequest("GET", "/error/fiber", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/error/unknown", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != fiber.StatusInternalServerError {
+		t.Fail()
+	}
+
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req)
+	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -56,15 +77,24 @@ func TestMiddleware(t *testing.T) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
+	want = `http_requests_total{method="GET",path="/error/:type",service="test-service",status_code="400"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_total{method="GET",path="/error/:type",service="test-service",status_code="500"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
 	want = `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `http_requests_in_progress_total{method="GET",path="/",service="test-service"} 0`
+	want = `http_requests_in_progress_total{method="GET",service="test-service"} 0`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
-
 	}
 }
 
@@ -78,13 +108,13 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req)
+	resp, _ := app.Test(req, -1)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req)
+	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -99,7 +129,7 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `my_service_with_name_http_requests_in_progress_total{method="GET",path="/",service="unique-service"} 0`
+	want = `my_service_with_name_http_requests_in_progress_total{method="GET",service="unique-service"} 0`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
@@ -119,13 +149,13 @@ func TestMiddlewareWithLabels(t *testing.T) {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req)
+	resp, _ := app.Test(req, -1)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req)
+	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -140,7 +170,7 @@ func TestMiddlewareWithLabels(t *testing.T) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `my_service_http_requests_in_progress_total{customkey1="customvalue1",customkey2="customvalue2",method="GET",path="/"} 0`
+	want = `my_service_http_requests_in_progress_total{customkey1="customvalue1",customkey2="customvalue2",method="GET"} 0`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
