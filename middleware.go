@@ -148,10 +148,7 @@ func NewWithLabels(labels map[string]string, namespace, subsystem string) *Fiber
 func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := []fiber.Handler{}
-	h = append(h, handlers...)
-	h = append(h, adaptor.HTTPHandler(promhttp.Handler()))
-
+	h := append(handlers, adaptor.HTTPHandler(promhttp.Handler()))
 	app.Get(ps.defaultURL, h...)
 }
 
