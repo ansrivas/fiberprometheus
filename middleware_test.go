@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 )
 
 func TestMiddleware(t *testing.T) {
@@ -173,5 +174,40 @@ func TestMiddlewareWithLabels(t *testing.T) {
 	want = `my_service_http_requests_in_progress_total{customkey1="customvalue1",customkey2="customvalue2",method="GET"} 0`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
+	}
+}
+
+func TestMiddlewareWithBasicAuth(t *testing.T) {
+	app := fiber.New()
+
+	prometheus := New("basic-auth")
+	prometheus.RegisterAt(app, "/metrics", basicauth.New(basicauth.Config{
+		Users: map[string]string{
+			"prometheus": "password",
+		},
+	}))
+
+	app.Use(prometheus.Middleware)
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != 401 {
+		t.Fail()
+	}
+
+	req.SetBasicAuth("prometheus", "password")
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
 	}
 }
