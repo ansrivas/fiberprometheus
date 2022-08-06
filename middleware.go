@@ -48,39 +48,50 @@ type fiberPrometheusOptions struct {
 	registry    prometheus.Registerer
 }
 
-type Opts func(*fiberPrometheusOptions)
+// Option is used to set options when creating a new instance of FiberPrometheus.
+//
+// Example usage:
+//
+//     prom := New("my_service", WithNamespace("my_namespace"))
+//
+type Option func(*fiberPrometheusOptions)
 
-func WithServiceName(serviceName string) Opts {
+// WithServiceName sets the service name as a constant label.
+func WithServiceName(serviceName string) Option {
 	return func(o *fiberPrometheusOptions) {
 		o.serviceName = serviceName
 	}
 }
 
-func WithNamespace(namespace string) Opts {
+// WithNamespace will prefix the metrics with the given namespace.
+func WithNamespace(namespace string) Option {
 	return func(o *fiberPrometheusOptions) {
 		o.namespace = namespace
 	}
 }
 
-func WithSubsystem(subsystem string) Opts {
+// WithSubsystem will prefix the metrics with the given subsystem.
+func WithSubsystem(subsystem string) Option {
 	return func(o *fiberPrometheusOptions) {
 		o.subsystem = subsystem
 	}
 }
 
-func WithLabels(labels map[string]string) Opts {
+// WithLabels will set constant labels for the metrics.
+func WithLabels(labels map[string]string) Option {
 	return func(o *fiberPrometheusOptions) {
 		o.labels = labels
 	}
 }
 
-func WithRegistry(registry prometheus.Registerer) Opts {
+// WithRegistry will register the collector with the given registry.
+func WithRegistry(registry prometheus.Registerer) Option {
 	return func(o *fiberPrometheusOptions) {
 		o.registry = registry
 	}
 }
 
-func create(opts ...Opts) *FiberPrometheus {
+func create(opts ...Option) *FiberPrometheus {
 	opt := &fiberPrometheusOptions{
 		subsystem: "http",
 		registry:  prometheus.DefaultRegisterer,
@@ -164,7 +175,7 @@ func create(opts ...Opts) *FiberPrometheus {
 
 // New creates a new instance of FiberPrometheus middleware
 // serviceName is available as a const label
-func New(serviceName string, opts ...Opts) *FiberPrometheus {
+func New(serviceName string, opts ...Option) *FiberPrometheus {
 	return create(append(opts, WithServiceName(serviceName))...)
 }
 
