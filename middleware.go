@@ -175,6 +175,8 @@ func New(serviceName string, opts ...Opts) *FiberPrometheus {
 //
 // For e.g. namespace = "my_app", subsystem = "http" then metrics would be
 // `my_app_http_requests_total{...,service= "serviceName"}`
+//
+// Deprecated: Use New instead.
 func NewWith(serviceName, namespace, subsystem string) *FiberPrometheus {
 	return create(WithServiceName(serviceName), WithNamespace(namespace), WithSubsystem(subsystem))
 }
@@ -187,6 +189,8 @@ func NewWith(serviceName, namespace, subsystem string) *FiberPrometheus {
 // For e.g. namespace = "my_app", subsystem = "http" and labels = map[string]string{"key1": "value1", "key2":"value2"}
 // then then metrics would become
 // `my_app_http_requests_total{...,key1= "value1", key2= "value2" }``
+//
+// Deprecated: Use New instead.
 func NewWithLabels(labels map[string]string, namespace, subsystem string) *FiberPrometheus {
 	return create(WithNamespace(namespace), WithSubsystem(subsystem), WithLabels(labels))
 }
@@ -199,6 +203,8 @@ func NewWithLabels(labels map[string]string, namespace, subsystem string) *Fiber
 // For e.g. namespace = "my_app", subsystem = "http" and labels = map[string]string{"key1": "value1", "key2":"value2"}
 // then then metrics would become
 // `my_app_http_requests_total{...,key1= "value1", key2= "value2" }``
+//
+// Deprecated: Use New instead.
 func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
 	return create(WithRegistry(registry), WithServiceName(serviceName), WithNamespace(namespace), WithSubsystem(subsystem), WithLabels(labels))
 }
