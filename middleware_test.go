@@ -221,7 +221,7 @@ func TestMiddlewareWithCustomRegistry(t *testing.T) {
 	srv := httptest.NewServer(promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	t.Cleanup(srv.Close)
 
-	promfiber := NewWithRegistry(registry, "unique-service", "my_service_with_name", "http", nil)
+	promfiber := New("unique-service", WithRegistry(registry), WithNamespace("my_service_with_name"))
 	app.Use(promfiber.Middleware)
 
 	app.Get("/", func(c *fiber.Ctx) error {
