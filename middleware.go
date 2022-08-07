@@ -40,65 +40,17 @@ type FiberPrometheus struct {
 	defaultURL      string
 }
 
-type fiberPrometheusOptions struct {
-	serviceName string
-	namespace   string
-	subsystem   string
-	labels      map[string]string
-	registry    prometheus.Registerer
-}
-
-// Option is used to set options when creating a new instance of FiberPrometheus.
-//
-// Example usage:
-//
-//     prom := New("my_service", WithNamespace("my_namespace"))
-//
-type Option func(*fiberPrometheusOptions)
-
-// WithServiceName sets the service name as a constant label.
-func WithServiceName(serviceName string) Option {
-	return func(o *fiberPrometheusOptions) {
-		o.serviceName = serviceName
-	}
-}
-
-// WithNamespace will prefix the metrics with the given namespace.
-func WithNamespace(namespace string) Option {
-	return func(o *fiberPrometheusOptions) {
-		o.namespace = namespace
-	}
-}
-
-// WithSubsystem will prefix the metrics with the given subsystem.
-func WithSubsystem(subsystem string) Option {
-	return func(o *fiberPrometheusOptions) {
-		o.subsystem = subsystem
-	}
-}
-
-// WithLabels will set constant labels for the metrics.
-func WithLabels(labels map[string]string) Option {
-	return func(o *fiberPrometheusOptions) {
-		o.labels = labels
-	}
-}
-
-// WithRegistry will register the collector with the given registry.
-func WithRegistry(registry prometheus.Registerer) Option {
-	return func(o *fiberPrometheusOptions) {
-		o.registry = registry
-	}
-}
-
 func create(opts ...Option) *FiberPrometheus {
+	// set default options
 	opt := &fiberPrometheusOptions{
 		subsystem: "http",
 		registry:  prometheus.DefaultRegisterer,
 	}
+	// apply options
 	for _, o := range opts {
 		o(opt)
 	}
+
 	constLabels := make(prometheus.Labels)
 	if opt.serviceName != "" {
 		constLabels["service"] = opt.serviceName
