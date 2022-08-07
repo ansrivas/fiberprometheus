@@ -29,6 +29,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func TestMiddleware(t *testing.T) {
@@ -209,5 +211,57 @@ func TestMiddlewareWithBasicAuth(t *testing.T) {
 	resp, _ = app.Test(req, -1)
 	if resp.StatusCode != 200 {
 		t.Fail()
+	}
+}
+
+func TestMiddlewareWithCustomRegistry(t *testing.T) {
+	app := fiber.New()
+	registry := prometheus.NewRegistry()
+
+	srv := httptest.NewServer(promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	t.Cleanup(srv.Close)
+
+	promfiber := NewWithRegistry(registry, "unique-service", "my_service_with_name", "http", nil)
+	app.Use(promfiber.Middleware)
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(req, -1)
+	if err != nil {
+		t.Fail()
+	}
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	resp, err = srv.Client().Get(srv.URL)
+	if err != nil {
+		t.Fail()
+	}
+	if resp == nil {
+		t.Fatal("response is nil")
+	}
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	got := string(body)
+	want := `my_service_with_name_http_requests_total{method="GET",path="/",service="unique-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `my_service_with_name_http_request_duration_seconds_count{method="GET",path="/",service="unique-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `my_service_with_name_http_requests_in_progress_total{method="GET",service="unique-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
 	}
 }
