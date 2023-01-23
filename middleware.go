@@ -139,7 +139,7 @@ func NewWith(serviceName, namespace, subsystem string) *FiberPrometheus {
 //
 // For e.g. namespace = "my_app", subsystem = "http" and labels = map[string]string{"key1": "value1", "key2":"value2"}
 // then then metrics would become
-// `my_app_http_requests_total{...,key1= "value1", key2= "value2" }``
+// `my_app_http_requests_total{...,key1= "value1", key2= "value2" }“
 func NewWithLabels(labels map[string]string, namespace, subsystem string) *FiberPrometheus {
 	return create(prometheus.DefaultRegisterer, "", namespace, subsystem, labels)
 }
@@ -151,7 +151,7 @@ func NewWithLabels(labels map[string]string, namespace, subsystem string) *Fiber
 //
 // For e.g. namespace = "my_app", subsystem = "http" and labels = map[string]string{"key1": "value1", "key2":"value2"}
 // then then metrics would become
-// `my_app_http_requests_total{...,key1= "value1", key2= "value2" }``
+// `my_app_http_requests_total{...,key1= "value1", key2= "value2" }“
 func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
 	return create(registry, serviceName, namespace, subsystem, labels)
 }

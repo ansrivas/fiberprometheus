@@ -22,7 +22,7 @@
 package fiberprometheus
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -73,7 +73,7 @@ func TestMiddleware(t *testing.T) {
 	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
 	want := `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
