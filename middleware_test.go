@@ -120,7 +120,7 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
 	want := `my_service_with_name_http_requests_total{method="GET",path="/",service="unique-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
@@ -161,7 +161,7 @@ func TestMiddlewareWithLabels(t *testing.T) {
 	resp, _ = app.Test(req, -1)
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
 	want := `my_service_http_requests_total{customkey1="customvalue1",customkey2="customvalue2",method="GET",path="/",status_code="200"} 1`
 	if !strings.Contains(got, want) {
@@ -248,7 +248,7 @@ func TestMiddlewareWithCustomRegistry(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
 	want := `my_service_with_name_http_requests_total{method="GET",path="/",service="unique-service",status_code="200"} 1`
 	if !strings.Contains(got, want) {
