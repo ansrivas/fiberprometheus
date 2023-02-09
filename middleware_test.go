@@ -101,6 +101,75 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
+func TestMiddlewareOnRoute(t *testing.T) {
+	app := fiber.New()
+	prometheus := New("test-route")
+	prefix := "/prefix/path"
+	app.Route(prefix, func(route fiber.Router) {
+		prometheus.RegisterAt(route, "/metrics")
+	}, "Prefixed Route")
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+	app.Get("/error/:type", func(ctx *fiber.Ctx) error {
+		switch ctx.Params("type") {
+		case "fiber":
+			return fiber.ErrBadRequest
+		default:
+			return fiber.ErrInternalServerError
+		}
+
+	})
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/error/fiber", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/error/unknown", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != fiber.StatusInternalServerError {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", prefix+"/metrics", nil)
+	resp, _ = app.Test(req, -1)
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+	want := `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_total{method="GET",path="/error/:type",service="test-service",status_code="400"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_total{method="GET",path="/error/:type",service="test-service",status_code="500"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_in_progress_total{method="GET",service="test-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+}
+
 func TestMiddlewareWithServiceName(t *testing.T) {
 	app := fiber.New()
 

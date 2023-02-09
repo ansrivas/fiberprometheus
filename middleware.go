@@ -157,7 +157,7 @@ func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, sub
 }
 
 // RegisterAt will register the prometheus handler at a given URL
-func (ps *FiberPrometheus) RegisterAt(app *fiber.App, url string, handlers ...fiber.Handler) {
+func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
 	h := append(handlers, adaptor.HTTPHandler(promhttp.Handler()))
