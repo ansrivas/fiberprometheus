@@ -49,7 +49,6 @@ func TestMiddleware(t *testing.T) {
 		default:
 			return fiber.ErrInternalServerError
 		}
-
 	})
 	req := httptest.NewRequest("GET", "/", nil)
 	resp, _ := app.Test(req, -1)
@@ -118,7 +117,6 @@ func TestMiddlewareOnRoute(t *testing.T) {
 		default:
 			return fiber.ErrInternalServerError
 		}
-
 	})
 	req := httptest.NewRequest("GET", "/", nil)
 	resp, _ := app.Test(req, -1)
