@@ -22,6 +22,7 @@
 package fiberprometheus
 
 import (
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -328,6 +330,50 @@ func TestMiddlewareWithCustomRegistry(t *testing.T) {
 	}
 
 	want = `my_service_with_name_http_requests_in_progress_total{method="GET",service="unique-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+}
+
+func TestCustomRegistryRegisterAt(t *testing.T) {
+	app := fiber.New()
+	registry := prometheus.NewRegistry()
+	registry.Register(collectors.NewGoCollector())
+	registry.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	fpCustom := NewWithRegistry(registry, "custom-registry", "custom_name", "http", nil)
+	fpCustom.RegisterAt(app, "/metrics")
+
+	app.Use(fpCustom.Middleware)
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, world!")
+	})
+	req := httptest.NewRequest("GET", "/", nil)
+	res, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatal(fmt.Errorf("GET / failed: %w", err))
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Fatal(fmt.Errorf("GET /: Status=%d", res.StatusCode))
+	}
+
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	resMetr, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
+	}
+	defer resMetr.Body.Close()
+	if res.StatusCode != 200 {
+		t.Fatal(fmt.Errorf("GET /metrics: Status=%d", resMetr.StatusCode))
+	}
+	body, err := io.ReadAll(resMetr.Body)
+	if err != nil {
+		t.Fatal(fmt.Errorf("GET /metrics: read body: %w", err))
+	}
+	got := string(body)
+
+	want := `custom_name_http_requests_total{method="GET",path="/",service="custom-registry",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
