@@ -34,6 +34,7 @@ import (
 
 // FiberPrometheus ...
 type FiberPrometheus struct {
+	gatherer        prometheus.Gatherer
 	requestsTotal   *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	requestInFlight *prometheus.GaugeVec
@@ -107,7 +108,15 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 		ConstLabels: constLabels,
 	}, []string{"method"})
 
+	// If the registerer is also a gatherer, use it, falling back to the
+	// DefaultGatherer.
+	gatherer, ok := registry.(prometheus.Gatherer)
+	if !ok {
+		gatherer = prometheus.DefaultGatherer
+	}
+
 	return &FiberPrometheus{
+		gatherer:        gatherer,
 		requestsTotal:   counter,
 		requestDuration: histogram,
 		requestInFlight: gauge,
@@ -160,7 +169,7 @@ func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, sub
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := append(handlers, adaptor.HTTPHandler(promhttp.Handler()))
+	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{})))
 	app.Get(ps.defaultURL, h...)
 }
 
