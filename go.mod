@@ -1,6 +1,6 @@
 module github.com/ansrivas/fiberprometheus/v2
 
-go 1.18
+go 1.20
 
 require (
 	github.com/gofiber/adaptor/v2 v2.2.1
