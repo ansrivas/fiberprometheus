@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/gofiber/adaptor/v2 v2.2.1
-	github.com/gofiber/fiber/v2 v2.52.1
+	github.com/gofiber/fiber/v2 v2.52.2
 	github.com/prometheus/client_golang v1.18.0
 )
 
