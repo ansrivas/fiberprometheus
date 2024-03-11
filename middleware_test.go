@@ -427,12 +427,12 @@ func TestWithCacheMiddleware(t *testing.T) {
 	}
 
 	// Path is currently wrong as per https://github.com/ansrivas/fiberprometheus/issues/187
-	want = `custom_name_http_cache_hits{method="GET",path="/",service="custom-registry",status_code="200"} 1`
+	want = `custom_name_http_cache_results{cache_result="hit",method="GET",path="/",service="custom-registry",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `custom_name_http_cache_miss{method="GET",path="/myPath",service="custom-registry",status_code="200"} 1`
+	want = `custom_name_http_cache_results{cache_result="miss",method="GET",path="/myPath",service="custom-registry",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
@@ -490,12 +490,12 @@ func TestWithCacheMiddlewareWithCustomKey(t *testing.T) {
 	}
 
 	// Path is currently wrong as per https://github.com/ansrivas/fiberprometheus/issues/187
-	want = `custom_name_http_cache_hits{method="GET",path="/",service="custom-registry",status_code="200"} 1`
+	want = `custom_name_http_cache_results{cache_result="hit",method="GET",path="/",service="custom-registry",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	want = `custom_name_http_cache_miss{method="GET",path="/myPath",service="custom-registry",status_code="200"} 1`
+	want = `custom_name_http_cache_results{cache_result="miss",method="GET",path="/myPath",service="custom-registry",status_code="200"} 1`
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}

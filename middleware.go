@@ -27,6 +27,7 @@ import (
 
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -63,7 +64,7 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 
 	cacheCounter := promauto.With(registry).NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        prometheus.BuildFQName(namespace, subsystem, "cache_hits"),
+			Name:        prometheus.BuildFQName(namespace, subsystem, "cache_results"),
 			Help:        "Counts all cache hits by status code, method, and path",
 			ConstLabels: constLabels,
 		},
@@ -225,7 +226,7 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	statusCode := strconv.Itoa(status)
 	ps.requestsTotal.WithLabelValues(statusCode, method, path).Inc()
 
-	cacheResult := ctx.GetRespHeader(ps.cacheHeaderKey, "")
+	cacheResult := utils.CopyString(ctx.GetRespHeader(ps.cacheHeaderKey, ""))
 	if cacheResult != "" {
 		ps.cacheCounter.WithLabelValues(statusCode, method, path, cacheResult).Inc()
 	}
