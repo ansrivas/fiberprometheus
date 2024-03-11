@@ -426,9 +426,14 @@ func TestWithCacheMiddleware(t *testing.T) {
 		t.Errorf("got %s; want %s", got, want)
 	}
 
-	dontWant := `custom_name_http_requests_total{method="GET",path="/",service="custom-registry",status_code="200"} 1`
-	if strings.Contains(got, dontWant) {
-		t.Errorf("got %s; didn't want %s", got, want)
+	want = "custom_name_http_cache_hits{method="GET",path="/",service="custom-registry",status_code="200"} 1"
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = "custom_name_http_cache_misses{method="GET",path="/",service="custom-registry",status_code="200"} 1"
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
 	}
 
 }
