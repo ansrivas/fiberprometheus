@@ -34,11 +34,14 @@ import (
 
 // FiberPrometheus ...
 type FiberPrometheus struct {
-	gatherer        prometheus.Gatherer
-	requestsTotal   *prometheus.CounterVec
-	requestDuration *prometheus.HistogramVec
-	requestInFlight *prometheus.GaugeVec
-	defaultURL      string
+	gatherer         prometheus.Gatherer
+	requestsTotal    *prometheus.CounterVec
+	requestDuration  *prometheus.HistogramVec
+	requestInFlight  *prometheus.GaugeVec
+	cacheHeaderKey   string
+	cacheHitCounter  *prometheus.CounterVec
+	cacheMissCounter *prometheus.CounterVec
+	defaultURL       string
 }
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
@@ -58,6 +61,25 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 		},
 		[]string{"status_code", "method", "path"},
 	)
+
+	cacheHitCounter := promauto.With(registry).NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        prometheus.BuildFQName(namespace, subsystem, "cache_hits"),
+			Help:        "Counts all cache hits by status code, method, and path",
+			ConstLabels: constLabels,
+		},
+		[]string{"status_code", "method", "path"},
+	)
+
+	cacheMissCounter := promauto.With(registry).NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        prometheus.BuildFQName(namespace, subsystem, "cache_miss"),
+			Help:        "Counts all cache misses by status code, method, and path",
+			ConstLabels: constLabels,
+		},
+		[]string{"status_code", "method", "path"},
+	)
+
 	histogram := promauto.With(registry).NewHistogramVec(prometheus.HistogramOpts{
 		Name:        prometheus.BuildFQName(namespace, subsystem, "request_duration_seconds"),
 		Help:        "Duration of all HTTP requests by status code, method and path.",
@@ -116,11 +138,14 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 	}
 
 	return &FiberPrometheus{
-		gatherer:        gatherer,
-		requestsTotal:   counter,
-		requestDuration: histogram,
-		requestInFlight: gauge,
-		defaultURL:      "/metrics",
+		gatherer:         gatherer,
+		requestsTotal:    counter,
+		requestDuration:  histogram,
+		requestInFlight:  gauge,
+		cacheHeaderKey:   "X-Cache",
+		cacheHitCounter:  cacheHitCounter,
+		cacheMissCounter: cacheMissCounter,
+		defaultURL:       "/metrics",
 	}
 }
 
@@ -173,6 +198,12 @@ func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...
 	app.Get(ps.defaultURL, h...)
 }
 
+// CustomCacheKey allows to set a custom header key for caching
+// By default it is set to "X-Cache", the fiber default
+func (ps *FiberPrometheus) CustomCacheKey(cacheHeaderKey string) {
+	ps.cacheHeaderKey = cacheHeaderKey
+}
+
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	start := time.Now()
@@ -204,6 +235,13 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	statusCode := strconv.Itoa(status)
 	ps.requestsTotal.WithLabelValues(statusCode, method, path).Inc()
+
+	cache := ctx.GetRespHeader(ps.cacheHeaderKey, "")
+	if cache == "miss" {
+		ps.cacheMissCounter.WithLabelValues(statusCode, method, path).Inc()
+	} else if cache == "hit" {
+		ps.cacheHitCounter.WithLabelValues(statusCode, method, path).Inc()
+	}
 
 	elapsed := float64(time.Since(start).Nanoseconds()) / 1e9
 	ps.requestDuration.WithLabelValues(statusCode, method, path).Observe(elapsed)
