@@ -30,6 +30,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -377,4 +378,57 @@ func TestCustomRegistryRegisterAt(t *testing.T) {
 	if !strings.Contains(got, want) {
 		t.Errorf("got %s; want %s", got, want)
 	}
+}
+
+func TestWithCacheMiddleware(t *testing.T) {
+	app := fiber.New()
+	registry := prometheus.NewRegistry()
+	registry.Register(collectors.NewGoCollector())
+	registry.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	fpCustom := NewWithRegistry(registry, "custom-registry", "custom_name", "http", nil)
+	fpCustom.RegisterAt(app, "/metrics")
+
+	app.Use(fpCustom.Middleware)
+	app.Use(cache.New())
+
+	app.Get("/myPath", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, world!")
+	})
+
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest("GET", "/myPath", nil)
+		res, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatal(fmt.Errorf("GET / failed: %w", err))
+		}
+		defer res.Body.Close()
+		if res.StatusCode != 200 {
+			t.Fatal(fmt.Errorf("GET /: Status=%d", res.StatusCode))
+		}
+	}
+
+	req := httptest.NewRequest("GET", "/metrics", nil)
+	res, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Fatal(fmt.Errorf("GET /metrics: Status=%d", res.StatusCode))
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(fmt.Errorf("GET /metrics: read body: %w", err))
+	}
+	got := string(body)
+	want := `custom_name_http_requests_total{method="GET",path="/myPath",service="custom-registry",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	dontWant := `custom_name_http_requests_total{method="GET",path="/",service="custom-registry",status_code="200"} 1`
+	if strings.Contains(got, dontWant) {
+		t.Errorf("got %s; didn't want %s", got, want)
+	}
+
 }
