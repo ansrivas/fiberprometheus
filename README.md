@@ -2,6 +2,8 @@
 
 Prometheus middleware for gofiber.
 
+**Note: Requires Go 1.21 and above**
+
 ![Release](https://img.shields.io/github/release/ansrivas/fiberprometheus.svg)
 [![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
 ![Test](https://github.com/ansrivas/fiberprometheus/workflows/Test/badge.svg)
