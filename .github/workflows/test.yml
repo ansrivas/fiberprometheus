@@ -20,5 +20,5 @@ jobs:
         with:
           go-version: '${{ matrix.go-version }}'
       - name: Run Test
-        run: go test -race
+        run: go test -race -count=1
 
