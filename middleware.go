@@ -201,12 +201,13 @@ func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	start := time.Now()
-	method := ctx.Route().Method
+	path := string(ctx.Request().RequestURI())
 
-	if ctx.Route().Path == ps.defaultURL {
+	if path == ps.defaultURL {
 		return ctx.Next()
 	}
 
+	method := ctx.Route().Method
 	ps.requestInFlight.WithLabelValues(method).Inc()
 	defer func() {
 		ps.requestInFlight.WithLabelValues(method).Dec()
@@ -225,8 +226,7 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 		status = ctx.Response().StatusCode()
 	}
 
-	// Get path from the context
-	path := string(ctx.Request().RequestURI())
+	// Get status as string
 	statusCode := strconv.Itoa(status)
 
 	// Update total requests counter
