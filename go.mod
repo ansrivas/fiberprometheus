@@ -3,7 +3,7 @@ module github.com/ansrivas/fiberprometheus/v2
 go 1.21
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.2
+	github.com/gofiber/fiber/v2 v2.52.3
 	github.com/prometheus/client_golang v1.19.0
 	github.com/valyala/fasthttp v1.52.0
 )
