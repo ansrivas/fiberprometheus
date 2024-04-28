@@ -46,10 +46,15 @@ func main() {
   // fiberprometheus.NewWithLabels(labels, namespace, subsystem )
   prometheus := fiberprometheus.New("my-service-name")
   prometheus.RegisterAt(app, "/metrics")
+  prometheus.SetSkipPaths([]string{"/ping"}) // Optional: Remove some paths from metrics
   app.Use(prometheus.Middleware)
 
   app.Get("/", func(c *fiber.Ctx) error {
     return c.SendString("Hello World")
+  })
+
+  app.Get("/ping", func(c *fiber.Ctx) error {
+    return c.SendString("pong")
   })
 
   app.Post("/some", func(c *fiber.Ctx) error {

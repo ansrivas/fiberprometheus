@@ -42,6 +42,7 @@ type FiberPrometheus struct {
 	cacheHeaderKey  string
 	cacheCounter    *prometheus.CounterVec
 	defaultURL      string
+	skipPaths       map[string]struct{}
 }
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
@@ -198,15 +199,29 @@ func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...
 	app.Get(ps.defaultURL, h...)
 }
 
+// SetSkipPaths allows to set the paths that should be skipped from the metrics
+func (ps *FiberPrometheus) SetSkipPaths(paths []string) {
+	ps.skipPaths = make(map[string]struct{})
+	for _, path := range paths {
+		ps.skipPaths[path] = struct{}{}
+	}
+}
+
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
-	start := time.Now()
 	path := string(ctx.Request().RequestURI())
 
 	if path == ps.defaultURL {
 		return ctx.Next()
 	}
 
+	// Check if the path is in the map of skipped paths
+	if _, exists := ps.skipPaths[path]; exists {
+		return ctx.Next() // Skip metrics collection
+	}
+
+	// Start metrics timer
+	start := time.Now()
 	method := ctx.Route().Method
 	ps.requestInFlight.WithLabelValues(method).Inc()
 	defer func() {

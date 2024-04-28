@@ -105,6 +105,76 @@ func TestMiddleware(t *testing.T) {
 	}
 }
 
+func TestMiddlewareWithSkipPath(t *testing.T) {
+	t.Parallel()
+	app := fiber.New()
+
+	prometheus := New("test-service")
+	prometheus.RegisterAt(app, "/metrics")
+	prometheus.SetSkipPaths([]string{"/healthz", "/livez"})
+	app.Use(prometheus.Middleware)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+	app.Get("/healthz", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+	app.Get("/livez", func(c *fiber.Ctx) error {
+		return c.SendString("Hello World")
+	})
+
+	// Make requests
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, _ := app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/healthz", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	req = httptest.NewRequest("GET", "/livez", nil)
+	resp, _ = app.Test(req, -1)
+	if resp.StatusCode != 200 {
+		t.Fail()
+	}
+
+	// Check Metrics Response
+	req = httptest.NewRequest("GET", "/metrics", nil)
+	resp, _ = app.Test(req, -1)
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+	want := `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_total{method="GET",path="/healthz",service="test-service",status_code="200"} 1`
+	if strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_total{method="GET",path="/livez",service="test-service",status_code="200"} 1`
+	if strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	want = `http_requests_in_progress_total{method="GET",service="test-service"} 0`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+}
+
 func TestMiddlewareWithGroup(t *testing.T) {
 	t.Parallel()
 	app := fiber.New()
