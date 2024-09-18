@@ -1,3 +1,7 @@
+**NOTE**: 🚨 We are currently migrating this middleware to the official gofiber/contrib repo, official link etc. will be posted soon.
+
+
+
 # fiberprometheus
 
 Prometheus middleware for gofiber.
