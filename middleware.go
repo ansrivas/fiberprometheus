@@ -23,6 +23,7 @@ package fiberprometheus
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,10 +40,8 @@ type FiberPrometheus struct {
 	requestsTotal   *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	requestInFlight *prometheus.GaugeVec
-	cacheHeaderKey  string
-	cacheCounter    *prometheus.CounterVec
 	defaultURL      string
-	skipPaths       map[string]struct{}
+	skipPaths       map[string]bool
 }
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
@@ -67,38 +66,11 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 		[]string{"status_code", "method", "path"},
 	)
 
-	cacheCounter := promauto.With(registry).NewCounterVec(
-		prometheus.CounterOpts{
-			Name:        prometheus.BuildFQName(namespace, subsystem, "cache_results"),
-			Help:        "Counts all cache hits by status code, method, and path",
-			ConstLabels: constLabels,
-		},
-		[]string{"status_code", "method", "path", "cache_result"},
-	)
-
 	histogram := promauto.With(registry).NewHistogramVec(prometheus.HistogramOpts{
 		Name:        prometheus.BuildFQName(namespace, subsystem, "request_duration_seconds"),
 		Help:        "Duration of all HTTP requests by status code, method and path.",
 		ConstLabels: constLabels,
 		Buckets: []float64{
-			0.000000001, // 1ns
-			0.000000002,
-			0.000000005,
-			0.00000001, // 10ns
-			0.00000002,
-			0.00000005,
-			0.0000001, // 100ns
-			0.0000002,
-			0.0000005,
-			0.000001, // 1µs
-			0.000002,
-			0.000005,
-			0.00001, // 10µs
-			0.00002,
-			0.00005,
-			0.0001, // 100µs
-			0.0002,
-			0.0005,
 			0.001, // 1ms
 			0.002,
 			0.005,
@@ -115,6 +87,7 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 			15.0,
 			20.0,
 			30.0,
+			60.0, // 1m
 		},
 	},
 		[]string{"status_code", "method", "path"},
@@ -138,16 +111,8 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 		requestsTotal:   counter,
 		requestDuration: histogram,
 		requestInFlight: gauge,
-		cacheHeaderKey:  "X-Cache",
-		cacheCounter:    cacheCounter,
 		defaultURL:      "/metrics",
 	}
-}
-
-// CustomCacheKey allows to set a custom header key for caching
-// By default it is set to "X-Cache", the fiber default
-func (ps *FiberPrometheus) CustomCacheKey(cacheHeaderKey string) {
-	ps.cacheHeaderKey = cacheHeaderKey
 }
 
 // New creates a new instance of FiberPrometheus middleware
@@ -191,6 +156,11 @@ func NewWithRegistry(registry prometheus.Registerer, serviceName, namespace, sub
 	return create(registry, serviceName, namespace, subsystem, labels)
 }
 
+// NewWithDefaultRegistry creates a new instance of FiberPrometheus middleware using the default prometheus registry
+func NewWithDefaultRegistry(serviceName string) *FiberPrometheus {
+	return create(prometheus.DefaultRegisterer, serviceName, "http", "", nil)
+}
+
 // RegisterAt will register the prometheus handler at a given URL
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
@@ -201,61 +171,77 @@ func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...
 
 // SetSkipPaths allows to set the paths that should be skipped from the metrics
 func (ps *FiberPrometheus) SetSkipPaths(paths []string) {
-	ps.skipPaths = make(map[string]struct{})
+	if ps.skipPaths == nil {
+		ps.skipPaths = make(map[string]bool)
+	}
 	for _, path := range paths {
-		ps.skipPaths[path] = struct{}{}
+		ps.skipPaths[path] = true
 	}
 }
 
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
-	path := string(ctx.Request().RequestURI())
+	// Retrieve the request method
+	method := utils.CopyString(ctx.Method())
 
-	if path == ps.defaultURL {
-		return ctx.Next()
-	}
-
-	// Check if the path is in the map of skipped paths
-	if _, exists := ps.skipPaths[path]; exists {
-		return ctx.Next() // Skip metrics collection
-	}
-
-	// Start metrics timer
-	start := time.Now()
-	method := ctx.Route().Method
+	// Increment the in-flight gauge
 	ps.requestInFlight.WithLabelValues(method).Inc()
 	defer func() {
 		ps.requestInFlight.WithLabelValues(method).Dec()
 	}()
 
+	// Start metrics timer
+	start := time.Now()
+
+	// Continue stack
 	err := ctx.Next()
-	// initialize with default error code
-	// https://docs.gofiber.io/guide/error-handling
+
+	// Get the route path
+	routePath := utils.CopyString(ctx.Route().Path)
+
+	// If the route path is empty, use the current path
+	if routePath == "/" {
+		routePath = utils.CopyString(ctx.Path())
+	}
+
+	// Normalize the path
+	if routePath != "" && routePath != "/" {
+		routePath = normalizePath(routePath)
+	}
+
+	// Check if the normalized path should be skipped
+	if ps.skipPaths[routePath] {
+		return nil
+	}
+
+	// Determine status code from stack
 	status := fiber.StatusInternalServerError
 	if err != nil {
 		if e, ok := err.(*fiber.Error); ok {
-			// Get correct error code from fiber.Error type
 			status = e.Code
 		}
 	} else {
 		status = ctx.Response().StatusCode()
 	}
 
-	// Get status as string
+	// Convert status code to string
 	statusCode := strconv.Itoa(status)
 
-	// Update total requests counter
-	ps.requestsTotal.WithLabelValues(statusCode, method, path).Inc()
+	// Update metrics
+	ps.requestsTotal.WithLabelValues(statusCode, method, routePath).Inc()
 
-	// Update the cache counter
-	cacheResult := utils.CopyString(ctx.GetRespHeader(ps.cacheHeaderKey, ""))
-	if cacheResult != "" {
-		ps.cacheCounter.WithLabelValues(statusCode, method, path, cacheResult).Inc()
-	}
-
-	// Update the request duration histogram
+	// Observe the Request Duration
 	elapsed := float64(time.Since(start).Nanoseconds()) / 1e9
-	ps.requestDuration.WithLabelValues(statusCode, method, path).Observe(elapsed)
+	ps.requestDuration.WithLabelValues(statusCode, method, routePath).Observe(elapsed)
 
 	return err
+}
+
+// normalizePath will remove the trailing slash from the route path
+func normalizePath(routePath string) string {
+	normalized := strings.TrimRight(routePath, "/")
+	if normalized == "" {
+		return "/"
+	}
+	return normalized
 }

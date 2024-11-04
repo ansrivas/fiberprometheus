@@ -1,8 +1,8 @@
 # fiberprometheus
 
-Prometheus middleware for gofiber.
+Prometheus middleware for [Fiber](https://github.com/gofiber/fiber)).
 
-**Note: Requires Go 1.21 and above**
+**Note: Requires Go 1.22 and above**
 
 ![Release](https://img.shields.io/github/release/ansrivas/fiberprometheus.svg)
 [![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
@@ -12,16 +12,15 @@ Prometheus middleware for gofiber.
 
 Following metrics are available by default:
 
-```
+```text
 http_requests_total
 http_request_duration_seconds
 http_requests_in_progress_total
-http_cache_results
 ```
 
 ### Install v2
 
-```
+```console
 go get -u github.com/gofiber/fiber/v2
 go get -u github.com/ansrivas/fiberprometheus/v2
 ```
@@ -32,8 +31,8 @@ go get -u github.com/ansrivas/fiberprometheus/v2
 package main
 
 import (
-	"github.com/ansrivas/fiberprometheus/v2"
-	"github.com/gofiber/fiber/v2"
+  "github.com/ansrivas/fiberprometheus/v2"
+  "github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -70,6 +69,6 @@ func main() {
 - Hit the default url at http://localhost:3000
 - Navigate to http://localhost:3000/metrics
 
-### Grafana Board
+### Grafana Dashboard
 
 - https://grafana.com/grafana/dashboards/14331
