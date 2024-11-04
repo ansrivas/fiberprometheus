@@ -71,6 +71,24 @@ func create(registry prometheus.Registerer, serviceName, namespace, subsystem st
 		Help:        "Duration of all HTTP requests by status code, method and path.",
 		ConstLabels: constLabels,
 		Buckets: []float64{
+			0.000000001, // 1ns
+			0.000000002,
+			0.000000005,
+			0.00000001, // 10ns
+			0.00000002,
+			0.00000005,
+			0.0000001, // 100ns
+			0.0000002,
+			0.0000005,
+			0.000001, // 1µs
+			0.000002,
+			0.000005,
+			0.00001, // 10µs
+			0.00002,
+			0.00005,
+			0.0001, // 100µs
+			0.0002,
+			0.0005,
 			0.001, // 1ms
 			0.002,
 			0.005,
