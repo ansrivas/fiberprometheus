@@ -32,6 +32,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // FiberPrometheus ...
@@ -183,7 +185,9 @@ func NewWithDefaultRegistry(serviceName string) *FiberPrometheus {
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{})))
+	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{
+		EnableOpenMetrics: true,
+	})))
 	app.Get(ps.defaultURL, h...)
 }
 
@@ -250,7 +254,17 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	// Observe the Request Duration
 	elapsed := float64(time.Since(start).Nanoseconds()) / 1e9
-	ps.requestDuration.WithLabelValues(statusCode, method, routePath).Observe(elapsed)
+
+	traceID := trace.SpanContextFromContext(ctx.UserContext()).TraceID()
+	histogram := ps.requestDuration.WithLabelValues(statusCode, method, routePath)
+
+	if traceID.IsValid() {
+		if histogramExemplar, ok := histogram.(prometheus.ExemplarObserver); ok {
+			histogramExemplar.ObserveWithExemplar(elapsed, prometheus.Labels{"traceID": traceID.String()})
+		}
+	}
+
+	histogram.Observe(elapsed)
 
 	return err
 }
