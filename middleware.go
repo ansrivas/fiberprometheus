@@ -262,6 +262,8 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 		if histogramExemplar, ok := histogram.(prometheus.ExemplarObserver); ok {
 			histogramExemplar.ObserveWithExemplar(elapsed, prometheus.Labels{"traceID": traceID.String()})
 		}
+
+		return err
 	}
 
 	histogram.Observe(elapsed)
