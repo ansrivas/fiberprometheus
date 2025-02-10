@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-var Tracer = otel.Tracer("FOCUZ")
-
 func otelTracingInit(t *testing.T) {
 	// Add trace resource attributes
 	res, err := resource.New(
@@ -59,11 +57,13 @@ func otelTracingInit(t *testing.T) {
 }
 
 func tracingMiddleware(c *fiber.Ctx) error {
+	tracer := otel.Tracer("FOCUZ")
+
 	// Create a new context with cancellation capability from Fiber context
 	ctx, cancel := context.WithCancel(c.UserContext())
 
 	// Start a new span with attributes for tracing the current request
-	ctx, span := Tracer.Start(ctx, c.Route().Name)
+	ctx, span := tracer.Start(ctx, c.Route().Name)
 
 	// Ensure the span is ended and context is cancelled when the request completes
 	defer span.End()
