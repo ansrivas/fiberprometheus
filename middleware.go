@@ -22,7 +22,6 @@
 package fiberprometheus
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -259,7 +258,6 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	traceID := trace.SpanContextFromContext(ctx.UserContext()).TraceID()
 	histogram := ps.requestDuration.WithLabelValues(statusCode, method, routePath)
 
-	fmt.Println("trace", traceID)
 	if traceID.IsValid() {
 		if histogramExemplar, ok := histogram.(prometheus.ExemplarObserver); ok {
 			histogramExemplar.ObserveWithExemplar(elapsed, prometheus.Labels{"traceID": traceID.String()})
