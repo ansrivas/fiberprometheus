@@ -2,13 +2,11 @@ package fiberprometheus
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http/httptest"
 	"os"
-	"strings"
+	"regexp"
 	"testing"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -65,13 +63,14 @@ func tracingMiddleware(c *fiber.Ctx) error {
 	ctx, cancel := context.WithCancel(c.UserContext())
 
 	// Start a new span with attributes for tracing the current request
-	_, span := Tracer.Start(ctx, c.Route().Name)
-
-	fmt.Println("spanid", span.SpanContext().SpanID())
+	ctx, span := Tracer.Start(ctx, c.Route().Name)
 
 	// Ensure the span is ended and context is cancelled when the request completes
 	defer span.End()
 	defer cancel()
+
+	// Set OTLP context
+	c.SetUserContext(ctx)
 
 	// Continue with the next middleware/handler
 	return c.Next()
@@ -98,8 +97,6 @@ func TestMiddlewareWithExamplar(t *testing.T) {
 		t.Fail()
 	}
 
-	time.Sleep(15 * time.Second)
-
 	req = httptest.NewRequest("GET", "/metrics", nil)
 	req.Header.Set("Accept", "application/openmetrics-text")
 	resp, _ = app.Test(req, -1)
@@ -107,21 +104,10 @@ func TestMiddlewareWithExamplar(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
 
-	t.Logf("debug: %v", got)
-
 	// Check Metrics Response
-	want := `http_requests_total{method="GET",path="/",service="test-service",status_code="200"} 1`
-	if !strings.Contains(got, want) {
-		t.Errorf("got %s; want %s", got, want)
-	}
-
-	want = `http_request_duration_seconds_count{method="GET",path="/",service="test-service",status_code="200"} 1`
-	if !strings.Contains(got, want) {
-		t.Errorf("got %s; want %s", got, want)
-	}
-
-	want = `http_requests_in_progress_total{method="GET",service="test-service"} 0`
-	if !strings.Contains(got, want) {
-		t.Errorf("got %s; want %s", got, want)
+	want := `http_request_duration_seconds_bucket{method="GET",path="/",service="test-service",status_code="200",le=".*"} 1 # {traceID=".*"} .*`
+	re := regexp.MustCompile(want)
+	if !re.MatchString(got) {
+		t.Errorf("got %s; want pattern %s", got, want)
 	}
 }
