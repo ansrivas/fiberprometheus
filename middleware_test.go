@@ -120,11 +120,9 @@ func TestMiddleware(t *testing.T) {
 
 func TestMiddlewareWithExamplar(t *testing.T) {
 	t.Parallel()
-
 	otelTracingInit(t)
 
 	app := fiber.New()
-
 	prometheus := New("test-service")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(tracingMiddleware)
@@ -983,6 +981,7 @@ func otelTracingInit(t *testing.T) {
 }
 
 func tracingMiddleware(c *fiber.Ctx) error {
+	// Create OTLP tracer
 	tracer := otel.Tracer("FOCUZ")
 
 	// Create a new context with cancellation capability from Fiber context
