@@ -109,7 +109,6 @@ func tracingMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-// Unit Test
 func TestMiddleware(t *testing.T) {
 	t.Parallel()
 
