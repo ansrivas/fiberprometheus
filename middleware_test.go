@@ -49,6 +49,67 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
+// Helper Functions
+func otelTracingInit(t *testing.T) {
+	// Add trace resource attributes
+	res, err := resource.New(
+		context.Background(),
+		resource.WithTelemetrySDK(),
+		resource.WithOS(),
+		resource.WithHost(),
+		resource.WithAttributes(attribute.String("service.name", "fiber")),
+	)
+	if err != nil {
+		t.Errorf("cant create otlp resource: %v", err)
+		t.Fail()
+	}
+
+	// Create stdout exporter
+	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	if err != nil {
+		t.Errorf("cant create otlp exporter: %v", err)
+		t.Fail()
+	}
+
+	// Create OTEL trace provider
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(traceExporter),
+		trace.WithResource(res),
+	)
+
+	os.Setenv("OTEL_TRACES_EXPORTER", "otlp")
+	os.Setenv("OTEL_TRACES_SAMPLER", "always_on")
+
+	// Set OTLP Provider
+	otel.SetTracerProvider(tp)
+
+	// SetTextMapPropagator configures the OpenTelemetry text map propagator
+	// using a composite of TraceContext and Baggage propagators.
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+}
+
+func tracingMiddleware(c *fiber.Ctx) error {
+	// Create OTLP tracer
+	tracer := otel.Tracer("FOCUZ")
+
+	// Create a new context with cancellation capability from Fiber context
+	ctx, cancel := context.WithCancel(c.UserContext())
+
+	// Start a new span with attributes for tracing the current request
+	ctx, span := tracer.Start(ctx, c.Route().Name)
+
+	// Ensure the span is ended and context is cancelled when the request completes
+	defer span.End()
+	defer cancel()
+
+	// Set OTLP context
+	c.SetUserContext(ctx)
+
+	// Continue with the next middleware/handler
+	return c.Next()
+}
+
+// Unit Test
 func TestMiddleware(t *testing.T) {
 	t.Parallel()
 
@@ -939,64 +1000,4 @@ func Benchmark_Middleware_Parallel(b *testing.B) {
 			h(ctx)
 		}
 	})
-}
-
-// helper functions
-func otelTracingInit(t *testing.T) {
-	// Add trace resource attributes
-	res, err := resource.New(
-		context.Background(),
-		resource.WithTelemetrySDK(),
-		resource.WithOS(),
-		resource.WithHost(),
-		resource.WithAttributes(attribute.String("service.name", "fiber")),
-	)
-	if err != nil {
-		t.Errorf("cant create otlp resource: %v", err)
-		t.Fail()
-	}
-
-	// Create stdout exporter
-	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
-	if err != nil {
-		t.Errorf("cant create otlp exporter: %v", err)
-		t.Fail()
-	}
-
-	// Create OTEL trace provider
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
-		trace.WithResource(res),
-	)
-
-	os.Setenv("OTEL_TRACES_EXPORTER", "otlp")
-	os.Setenv("OTEL_TRACES_SAMPLER", "always_on")
-
-	// Set OTLP Provider
-	otel.SetTracerProvider(tp)
-
-	// SetTextMapPropagator configures the OpenTelemetry text map propagator
-	// using a composite of TraceContext and Baggage propagators.
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-}
-
-func tracingMiddleware(c *fiber.Ctx) error {
-	// Create OTLP tracer
-	tracer := otel.Tracer("FOCUZ")
-
-	// Create a new context with cancellation capability from Fiber context
-	ctx, cancel := context.WithCancel(c.UserContext())
-
-	// Start a new span with attributes for tracing the current request
-	ctx, span := tracer.Start(ctx, c.Route().Name)
-
-	// Ensure the span is ended and context is cancelled when the request completes
-	defer span.End()
-	defer cancel()
-
-	// Set OTLP context
-	c.SetUserContext(ctx)
-
-	// Continue with the next middleware/handler
-	return c.Next()
 }
