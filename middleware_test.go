@@ -49,7 +49,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-// Helper Functions
+// Helper Functions for TestMiddlewareWithExamplar
 func otelTracingInit(t *testing.T) {
 	// Add trace resource attributes
 	res, err := resource.New(
@@ -88,6 +88,7 @@ func otelTracingInit(t *testing.T) {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 }
 
+// Helper Functions for TestMiddlewareWithExamplar
 func tracingMiddleware(c *fiber.Ctx) error {
 	// Create OTLP tracer
 	tracer := otel.Tracer("FOCUZ")
