@@ -26,9 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor" //"github.com/gofiber/fiber/v3/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -179,12 +178,22 @@ func NewWithDefaultRegistry(serviceName string) *FiberPrometheus {
 	return create(prometheus.DefaultRegisterer, serviceName, "http", "", nil)
 }
 
+type Router interface {
+	Get(path string, handler fiber.Handler, middleware ...fiber.Handler) Router
+}
+
 // RegisterAt will register the prometheus handler at a given URL
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{})))
-	app.Get(ps.defaultURL, h...)
+	adaptorHandler := adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{}))
+
+	if len(handlers) == 0 {
+		app.Get(ps.defaultURL, adaptorHandler)
+		return
+	}
+
+	app.Get(ps.defaultURL, handlers[0], append(handlers[1:], adaptorHandler)...)
 }
 
 // SetSkipPaths allows to set the paths that should be skipped from the metrics
@@ -198,9 +207,9 @@ func (ps *FiberPrometheus) SetSkipPaths(paths []string) {
 }
 
 // Middleware is the actual default middleware implementation
-func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
+func (ps *FiberPrometheus) Middleware(ctx fiber.Ctx) error {
 	// Retrieve the request method
-	method := utils.CopyString(ctx.Method())
+	method := strings.Clone(ctx.Method())
 
 	// Increment the in-flight gauge
 	ps.requestInFlight.WithLabelValues(method).Inc()
@@ -215,11 +224,11 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	err := ctx.Next()
 
 	// Get the route path
-	routePath := utils.CopyString(ctx.Route().Path)
+	routePath := strings.Clone(ctx.Route().Path)
 
 	// If the route path is empty, use the current path
 	if routePath == "/" {
-		routePath = utils.CopyString(ctx.Path())
+		routePath = strings.Clone(ctx.Path())
 	}
 
 	// Normalize the path

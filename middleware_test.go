@@ -31,8 +31,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -46,10 +46,10 @@ func TestMiddleware(t *testing.T) {
 	prometheus := New("test-service")
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
-	app.Get("/error/:type", func(ctx *fiber.Ctx) error {
+	app.Get("/error/:type", func(ctx fiber.Ctx) error {
 		switch ctx.Params("type") {
 		case "fiber":
 			return fiber.ErrBadRequest
@@ -58,25 +58,25 @@ func TestMiddleware(t *testing.T) {
 		}
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/fiber", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/unknown", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
@@ -116,38 +116,38 @@ func TestMiddlewareWithSkipPath(t *testing.T) {
 	prometheus.RegisterAt(app, "/metrics")
 	prometheus.SetSkipPaths([]string{"/healthz", "/livez"})
 	app.Use(prometheus.Middleware)
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
-	app.Get("/healthz", func(c *fiber.Ctx) error {
+	app.Get("/healthz", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
-	app.Get("/livez", func(c *fiber.Ctx) error {
+	app.Get("/livez", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
 	// Make requests
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/healthz", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/livez", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	// Check Metrics Response
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -195,10 +195,10 @@ func TestMiddlewareWithGroup(t *testing.T) {
 	public := app.Group("/public")
 
 	// Define Group Routes
-	public.Get("/", func(c *fiber.Ctx) error {
+	public.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
-	public.Get("/error/:type", func(ctx *fiber.Ctx) error {
+	public.Get("/error/:type", func(ctx fiber.Ctx) error {
 		switch ctx.Params("type") {
 		case "fiber":
 			return fiber.ErrBadRequest
@@ -207,25 +207,25 @@ func TestMiddlewareWithGroup(t *testing.T) {
 		}
 	})
 	req := httptest.NewRequest("GET", "/public", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/public/error/fiber", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/public/error/unknown", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
@@ -264,16 +264,16 @@ func TestMiddlewareOnRoute(t *testing.T) {
 	prometheus := New("test-route")
 	prefix := "/prefix/path"
 
-	app.Route(prefix, func(route fiber.Router) {
-		prometheus.RegisterAt(route, "/metrics")
-	}, "Prefixed Route")
+	route := app.Group(prefix)
+	prometheus.RegisterAt(route, "/metrics")
+
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
-	app.Get("/error/:type", func(ctx *fiber.Ctx) error {
+	app.Get("/error/:type", func(ctx fiber.Ctx) error {
 		switch ctx.Params("type") {
 		case "fiber":
 			return fiber.ErrBadRequest
@@ -283,25 +283,25 @@ func TestMiddlewareOnRoute(t *testing.T) {
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/fiber", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/error/unknown", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", prefix+"/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -340,17 +340,17 @@ func TestMiddlewareWithServiceName(t *testing.T) {
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -383,17 +383,17 @@ func TestMiddlewareWithLabels(t *testing.T) {
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -427,24 +427,24 @@ func TestMiddlewareWithBasicAuth(t *testing.T) {
 
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 401 {
 		t.Fail()
 	}
 
 	req.SetBasicAuth("prometheus", "password")
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fail()
 	}
@@ -460,12 +460,12 @@ func TestMiddlewareWithCustomRegistry(t *testing.T) {
 	promfiber := NewWithRegistry(registry, "unique-service", "my_service_with_name", "http", nil)
 	app.Use(promfiber.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req)
 	if err != nil {
 		t.Fail()
 	}
@@ -514,11 +514,11 @@ func TestCustomRegistryRegisterAt(t *testing.T) {
 	fpCustom.RegisterAt(app, "/metrics")
 	app.Use(fpCustom.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello, world!")
 	})
 	req := httptest.NewRequest("GET", "/", nil)
-	res, err := app.Test(req, -1)
+	res, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET / failed: %w", err))
 	}
@@ -528,7 +528,7 @@ func TestCustomRegistryRegisterAt(t *testing.T) {
 	}
 
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resMetr, err := app.Test(req, -1)
+	resMetr, err := app.Test(req)
 	if err != nil {
 		t.Fatal(fmt.Errorf("GET /metrics failed: %W", err))
 	}
@@ -561,7 +561,7 @@ func TestInFlightGauge(t *testing.T) {
 	app.Use(prometheus.Middleware)
 
 	// Long-running handler to simulate in-flight requests
-	app.Get("/long", func(c *fiber.Ctx) error {
+	app.Get("/long", func(c fiber.Ctx) error {
 		// Sleep for a short duration
 		time.Sleep(100 * time.Millisecond)
 		return c.SendString("Long Request")
@@ -579,7 +579,7 @@ func TestInFlightGauge(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			req := httptest.NewRequest("GET", "/long", nil)
-			app.Test(req, -1)
+			app.Test(req)
 		}()
 	}
 
@@ -589,7 +589,7 @@ func TestInFlightGauge(t *testing.T) {
 
 	// After all requests complete, in-flight gauge should be zero
 	req := httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
@@ -613,16 +613,16 @@ func TestDifferentHTTPMethods(t *testing.T) {
 	app.Use(prometheus.Middleware)
 
 	// Define handlers for different methods
-	app.Get("/resource", func(c *fiber.Ctx) error {
+	app.Get("/resource", func(c fiber.Ctx) error {
 		return c.SendString("GET")
 	})
-	app.Post("/resource", func(c *fiber.Ctx) error {
+	app.Post("/resource", func(c fiber.Ctx) error {
 		return c.SendString("POST")
 	})
-	app.Put("/resource", func(c *fiber.Ctx) error {
+	app.Put("/resource", func(c fiber.Ctx) error {
 		return c.SendString("PUT")
 	})
-	app.Delete("/resource", func(c *fiber.Ctx) error {
+	app.Delete("/resource", func(c fiber.Ctx) error {
 		return c.SendString("DELETE")
 	})
 
@@ -633,7 +633,7 @@ func TestDifferentHTTPMethods(t *testing.T) {
 	methods := []string{"GET", "POST", "PUT", "DELETE"}
 	for _, method := range methods {
 		req := httptest.NewRequest(method, "/resource", nil)
-		resp, _ := app.Test(req, -1)
+		resp, _ := app.Test(req)
 		if resp.StatusCode != 200 {
 			t.Fatalf("Expected status 200 for %s, got %d", method, resp.StatusCode)
 		}
@@ -641,7 +641,7 @@ func TestDifferentHTTPMethods(t *testing.T) {
 
 	// Check Metrics
 	req := httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
@@ -662,38 +662,38 @@ func TestSkipPathsWithTrailingSlash(t *testing.T) {
 	prometheus.SetSkipPaths([]string{"/healthz", "/livez"})
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
-	app.Get("/healthz/", func(c *fiber.Ctx) error { // Trailing slash
+	app.Get("/healthz/", func(c fiber.Ctx) error { // Trailing slash
 		return c.SendString("Healthz")
 	})
-	app.Get("/livez/", func(c *fiber.Ctx) error { // Trailing slash
+	app.Get("/livez/", func(c fiber.Ctx) error { // Trailing slash
 		return c.SendString("Livez")
 	})
 
 	// Make requests
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
 	}
 
 	req = httptest.NewRequest("GET", "/healthz/", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
 	}
 
 	req = httptest.NewRequest("GET", "/livez/", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Check Metrics
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -721,10 +721,10 @@ func TestMetricsAfterError(t *testing.T) {
 	prometheus := New("error-service")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/badrequest", func(c *fiber.Ctx) error {
+	app.Get("/badrequest", func(c fiber.Ctx) error {
 		return fiber.ErrBadRequest
 	})
-	app.Get("/internalerror", func(c *fiber.Ctx) error {
+	app.Get("/internalerror", func(c fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	})
 
@@ -733,20 +733,20 @@ func TestMetricsAfterError(t *testing.T) {
 
 	// Make error requests
 	req := httptest.NewRequest("GET", "/badrequest", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Fatalf("Expected status 400, got %d", resp.StatusCode)
 	}
 
 	req = httptest.NewRequest("GET", "/internalerror", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != fiber.StatusInternalServerError {
 		t.Fatalf("Expected status 500, got %d", resp.StatusCode)
 	}
 
 	// Check Metrics
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	got := string(body)
@@ -770,20 +770,20 @@ func TestMultipleRegistrations(t *testing.T) {
 	prometheus.RegisterAt(app, "/metrics")
 	prometheus.RegisterAt(app, "/metrics") // Register again
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
 	// Make requests
 	req := httptest.NewRequest("GET", "/", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Make a request to /metrics
 	req = httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ = app.Test(req, -1)
+	resp, _ = app.Test(req)
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
 	}
@@ -804,7 +804,7 @@ func TestMetricsHandlerConcurrentAccess(t *testing.T) {
 	prometheus := New("concurrent-service")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/resource", func(c *fiber.Ctx) error {
+	app.Get("/resource", func(c fiber.Ctx) error {
 		return c.SendString("Resource")
 	})
 
@@ -820,7 +820,7 @@ func TestMetricsHandlerConcurrentAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			req := httptest.NewRequest("GET", "/resource", nil)
-			app.Test(req, -1)
+			app.Test(req)
 		}()
 	}
 
@@ -828,7 +828,7 @@ func TestMetricsHandlerConcurrentAccess(t *testing.T) {
 
 	// Check Metrics
 	req := httptest.NewRequest("GET", "/metrics", nil)
-	resp, _ := app.Test(req, -1)
+	resp, _ := app.Test(req)
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
@@ -848,7 +848,7 @@ func Benchmark_Middleware(b *testing.B) {
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
@@ -875,7 +875,7 @@ func Benchmark_Middleware_Parallel(b *testing.B) {
 	prometheus.RegisterAt(app, "/metrics")
 	app.Use(prometheus.Middleware)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 
