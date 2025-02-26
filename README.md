@@ -4,7 +4,7 @@
 
 # fiberprometheus
 
-Prometheus middleware for [Fiber](https://github.com/gofiber/fiber)).
+Prometheus middleware for [Fiber](https://github.com/gofiber/fiber).
 
 **Note: Requires Go 1.22 and above**
 
