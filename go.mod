@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/prometheus/client_golang v1.21.0
+	github.com/prometheus/client_golang v1.21.1
 	github.com/valyala/fasthttp v1.59.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0
