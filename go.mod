@@ -1,7 +1,6 @@
 module github.com/ansrivas/fiberprometheus/v2
 
 go 1.22.0
-toolchain go1.24.1
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
