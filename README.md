@@ -50,7 +50,7 @@ func main() {
   prometheus := fiberprometheus.New("my-service-name")
   prometheus.RegisterAt(app, "/metrics")
   prometheus.SetSkipPaths([]string{"/ping"}) // Optional: Remove some paths from metrics
-  prometheus.SetIgnoreStatusCode([]int{401, 403, 404}) // Optional: Skip metrics for these status codes
+  prometheus.SetIgnoreStatusCodes([]int{401, 403, 404}) // Optional: Skip metrics for these status codes
   app.Use(prometheus.Middleware)
 
   app.Get("/", func(c *fiber.Ctx) error {

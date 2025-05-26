@@ -205,8 +205,8 @@ func (ps *FiberPrometheus) SetSkipPaths(paths []string) {
 	}
 }
 
-// SetIgnoreStatusCode allows ignoring specific status codes from being recorded in metrics
-func (ps *FiberPrometheus) SetIgnoreStatusCode(codes []int) {
+// SetIgnoreStatusCodes allows ignoring specific status codes from being recorded in metrics
+func (ps *FiberPrometheus) SetIgnoreStatusCodes(codes []int) {
 	if ps.ignoreStatusCodes == nil {
 		ps.ignoreStatusCodes = make(map[int]bool)
 	}
