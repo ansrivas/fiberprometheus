@@ -952,7 +952,7 @@ func TestIgnoreStatusCodes(t *testing.T) {
 	app := fiber.New()
 	prometheus := New("ignore-status")
 	prometheus.RegisterAt(app, "/metrics")
-	prometheus.SetIgnoreStatusCode([]int{401, 403})
+	prometheus.SetIgnoreStatusCodes([]int{401, 403})
 	app.Use(prometheus.Middleware)
 
 	app.Get("/", func(c *fiber.Ctx) error { return c.SendString("OK") })
@@ -989,7 +989,7 @@ func TestIgnoreStatusCodesWithGroup(t *testing.T) {
 	app := fiber.New()
 	prometheus := New("ignore-group")
 	prometheus.RegisterAt(app, "/metrics")
-	prometheus.SetIgnoreStatusCode([]int{400, 500})
+	prometheus.SetIgnoreStatusCodes([]int{400, 500})
 	app.Use(prometheus.Middleware)
 
 	public := app.Group("/public")
