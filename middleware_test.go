@@ -946,6 +946,138 @@ func TestMetricsHandlerConcurrentAccess(t *testing.T) {
 	}
 }
 
+func TestIgnoreStatusCodes(t *testing.T) {
+	t.Parallel()
+
+	app := fiber.New()
+	prometheus := New("ignore-status")
+	prometheus.RegisterAt(app, "/metrics")
+	prometheus.SetIgnoreStatusCode([]int{401, 403})
+	app.Use(prometheus.Middleware)
+
+	app.Get("/", func(c *fiber.Ctx) error { return c.SendString("OK") })
+	app.Get("/unauthorized", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusUnauthorized) })
+	app.Get("/forbidden", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusForbidden) })
+
+	app.Test(httptest.NewRequest("GET", "/", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/unauthorized", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/forbidden", nil), -1)
+
+	resp, _ := app.Test(httptest.NewRequest("GET", "/metrics", nil), -1)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+
+	want := `http_requests_total{method="GET",path="/",service="ignore-status",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	if strings.Contains(got, `/unauthorized`) {
+		t.Errorf("metrics should ignore status 401: %s", got)
+	}
+
+	if strings.Contains(got, `/forbidden`) {
+		t.Errorf("metrics should ignore status 403: %s", got)
+	}
+}
+
+// TestIgnoreStatusCodesWithGroup replicates TestMiddlewareWithGroup but ignores specific status codes.
+func TestIgnoreStatusCodesWithGroup(t *testing.T) {
+	t.Parallel()
+
+	app := fiber.New()
+	prometheus := New("ignore-group")
+	prometheus.RegisterAt(app, "/metrics")
+	prometheus.SetIgnoreStatusCode([]int{400, 500})
+	app.Use(prometheus.Middleware)
+
+	public := app.Group("/public")
+	public.Get("/", func(c *fiber.Ctx) error { return c.SendString("Hello World") })
+	public.Get("/error/:type", func(ctx *fiber.Ctx) error {
+		switch ctx.Params("type") {
+		case "fiber":
+			return fiber.ErrBadRequest
+		default:
+			return fiber.ErrInternalServerError
+		}
+	})
+
+	app.Test(httptest.NewRequest("GET", "/public", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/public/error/fiber", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/public/error/unknown", nil), -1)
+
+	resp, _ := app.Test(httptest.NewRequest("GET", "/metrics", nil), -1)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+
+	want := `http_requests_total{method="GET",path="/public",service="ignore-group",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+	if strings.Contains(got, `/public/error/:type`) {
+		t.Errorf("metrics should ignore 400 and 500 status codes: %s", got)
+	}
+}
+
+func TestSkipUnregisteredRoute(t *testing.T) {
+	t.Parallel()
+
+	app := fiber.New()
+	prometheus := New("skip-unregistered")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
+
+	app.Get("/registered", func(c *fiber.Ctx) error { return c.SendString("OK") })
+
+	app.Test(httptest.NewRequest("GET", "/registered", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/not-found", nil), -1)
+
+	resp, _ := app.Test(httptest.NewRequest("GET", "/metrics", nil), -1)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+
+	want := `http_requests_total{method="GET",path="/registered",service="skip-unregistered",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+
+	if strings.Contains(got, "/not-found") {
+		t.Errorf("metrics should skip unregistered route: %s", got)
+	}
+}
+
+// TestSkipUnregisteredRouteWithGroup replicates TestMiddlewareWithGroup but ensures unregistered routes are skipped.
+func TestSkipUnregisteredRouteWithGroup(t *testing.T) {
+	t.Parallel()
+
+	app := fiber.New()
+	prometheus := New("skip-group")
+	prometheus.RegisterAt(app, "/metrics")
+	app.Use(prometheus.Middleware)
+
+	public := app.Group("/public")
+	public.Get("/", func(c *fiber.Ctx) error { return c.SendString("OK") })
+
+	app.Test(httptest.NewRequest("GET", "/public", nil), -1)
+	app.Test(httptest.NewRequest("GET", "/unknown", nil), -1)
+
+	resp, _ := app.Test(httptest.NewRequest("GET", "/metrics", nil), -1)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	got := string(body)
+
+	want := `http_requests_total{method="GET",path="/public",service="skip-group",status_code="200"} 1`
+	if !strings.Contains(got, want) {
+		t.Errorf("got %s; want %s", got, want)
+	}
+	if strings.Contains(got, "/unknown") {
+		t.Errorf("metrics should skip unregistered route: %s", got)
+	}
+}
+
 func Benchmark_Middleware(b *testing.B) {
 	app := fiber.New()
 

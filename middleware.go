@@ -24,6 +24,7 @@ package fiberprometheus
 import (
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -38,12 +39,15 @@ import (
 
 // FiberPrometheus ...
 type FiberPrometheus struct {
-	gatherer        prometheus.Gatherer
-	requestsTotal   *prometheus.CounterVec
-	requestDuration *prometheus.HistogramVec
-	requestInFlight *prometheus.GaugeVec
-	defaultURL      string
-	skipPaths       map[string]bool
+	gatherer          prometheus.Gatherer
+	requestsTotal     *prometheus.CounterVec
+	requestDuration   *prometheus.HistogramVec
+	requestInFlight   *prometheus.GaugeVec
+	defaultURL        string
+	skipPaths         map[string]bool
+	ignoreStatusCodes map[int]bool
+	registeredRoutes  map[string]struct{}
+	routesOnce        sync.Once
 }
 
 func create(registry prometheus.Registerer, serviceName, namespace, subsystem string, labels map[string]string) *FiberPrometheus {
@@ -201,6 +205,16 @@ func (ps *FiberPrometheus) SetSkipPaths(paths []string) {
 	}
 }
 
+// SetIgnoreStatusCode allows ignoring specific status codes from being recorded in metrics
+func (ps *FiberPrometheus) SetIgnoreStatusCode(codes []int) {
+	if ps.ignoreStatusCodes == nil {
+		ps.ignoreStatusCodes = make(map[int]bool)
+	}
+	for _, code := range codes {
+		ps.ignoreStatusCodes[code] = true
+	}
+}
+
 // Middleware is the actual default middleware implementation
 func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	// Retrieve the request method
@@ -231,6 +245,23 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 		routePath = normalizePath(routePath)
 	}
 
+	// Build registered routes map once
+	ps.routesOnce.Do(func() {
+		ps.registeredRoutes = make(map[string]struct{})
+		for _, r := range ctx.App().GetRoutes(true) {
+			p := r.Path
+			if p != "" && p != "/" {
+				p = normalizePath(p)
+			}
+			ps.registeredRoutes[r.Method+" "+p] = struct{}{}
+		}
+	})
+
+	// Skip metrics for routes that are not registered
+	if _, ok := ps.registeredRoutes[method+" "+routePath]; !ok {
+		return err
+	}
+
 	// Check if the normalized path should be skipped
 	if ps.skipPaths[routePath] {
 		return nil
@@ -248,6 +279,11 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 
 	// Convert status code to string
 	statusCode := strconv.Itoa(status)
+
+	// Skip metrics for ignored status codes
+	if ps.ignoreStatusCodes[status] {
+		return err
+	}
 
 	// Update metrics
 	ps.requestsTotal.WithLabelValues(statusCode, method, routePath).Inc()
