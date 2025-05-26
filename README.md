@@ -50,6 +50,7 @@ func main() {
   prometheus := fiberprometheus.New("my-service-name")
   prometheus.RegisterAt(app, "/metrics")
   prometheus.SetSkipPaths([]string{"/ping"}) // Optional: Remove some paths from metrics
+  prometheus.SetIgnoreStatusCode([]int{401, 403, 404}) // Optional: Skip metrics for these status codes
   app.Use(prometheus.Middleware)
 
   app.Get("/", func(c *fiber.Ctx) error {
@@ -72,6 +73,7 @@ func main() {
 
 - Hit the default url at http://localhost:3000
 - Navigate to http://localhost:3000/metrics
+- Metrics are recorded only for routes registered with Fiber; unknown routes are skipped automatically
 
 ### Grafana Dashboard
 
