@@ -6,7 +6,7 @@
 
 Prometheus middleware for [Fiber](https://github.com/gofiber/fiber).
 
-**Note: Requires Go 1.22 and above**
+**Note: Requires Go 1.25 and above**
 
 ![Release](https://img.shields.io/github/release/ansrivas/fiberprometheus.svg)
 [![Discord](https://img.shields.io/badge/discord-join%20channel-7289DA)](https://gofiber.io/discord)
@@ -25,7 +25,7 @@ http_requests_in_progress_total
 ### Install v2
 
 ```console
-go get -u github.com/gofiber/fiber/v2
+go get -u github.com/gofiber/fiber/v3
 go get -u github.com/ansrivas/fiberprometheus/v2
 ```
 
@@ -36,14 +36,14 @@ package main
 
 import (
   "github.com/ansrivas/fiberprometheus/v2"
-  "github.com/gofiber/fiber/v2"
+  "github.com/gofiber/fiber/v3"
 )
 
 func main() {
   app := fiber.New()
 
   // This here will appear as a label, one can also use
-  // fiberprometheus.NewWith(servicename, namespace, subsystem )
+  // fiberprometheus.NewWith(serviceName, namespace, subsystem )
   // or
   // labels := map[string]string{"custom_label1":"custom_value1", "custom_label2":"custom_value2"}
   // fiberprometheus.NewWithLabels(labels, namespace, subsystem )

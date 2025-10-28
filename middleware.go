@@ -22,14 +22,15 @@
 package fiberprometheus
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
-	"github.com/gofiber/fiber/v2/utils"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
+	"github.com/gofiber/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -189,10 +190,13 @@ func NewWithDefaultRegistry(serviceName string) *FiberPrometheus {
 func (ps *FiberPrometheus) RegisterAt(app fiber.Router, url string, handlers ...fiber.Handler) {
 	ps.defaultURL = url
 
-	h := append(handlers, adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{
-		EnableOpenMetrics: true,
-	})))
-	app.Get(ps.defaultURL, h...)
+	app.Get(
+		ps.defaultURL,
+		adaptor.HTTPHandler(promhttp.HandlerFor(ps.gatherer, promhttp.HandlerOpts{
+			EnableOpenMetrics: true,
+		})),
+		handlers...,
+	)
 }
 
 // SetSkipPaths allows to set the paths that should be skipped from the metrics
@@ -216,9 +220,9 @@ func (ps *FiberPrometheus) SetIgnoreStatusCodes(codes []int) {
 }
 
 // Middleware is the actual default middleware implementation
-func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
+func (ps *FiberPrometheus) Middleware(ctx fiber.Ctx) error {
 	// Retrieve the request method
-	method := utils.CopyString(ctx.Method())
+	method := string(utils.UnsafeBytes(ctx.Method()))
 
 	// Increment the in-flight gauge
 	ps.requestInFlight.WithLabelValues(method).Inc()
@@ -233,11 +237,12 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	err := ctx.Next()
 
 	// Get the route path
-	routePath := utils.CopyString(ctx.Route().Path)
+
+	routePath := string(utils.UnsafeBytes(ctx.Route().Path))
 
 	// If the route path is empty, use the current path
 	if routePath == "/" {
-		routePath = utils.CopyString(ctx.Path())
+		routePath = string(utils.UnsafeBytes(ctx.Path()))
 	}
 
 	// Normalize the path
@@ -270,7 +275,8 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	// Determine status code from stack
 	status := fiber.StatusInternalServerError
 	if err != nil {
-		if e, ok := err.(*fiber.Error); ok {
+		var e *fiber.Error
+		if errors.As(err, &e) {
 			status = e.Code
 		}
 	} else {
@@ -291,7 +297,7 @@ func (ps *FiberPrometheus) Middleware(ctx *fiber.Ctx) error {
 	// Observe the Request Duration
 	elapsed := float64(time.Since(start).Nanoseconds()) / 1e9
 
-	traceID := trace.SpanContextFromContext(ctx.UserContext()).TraceID()
+	traceID := trace.SpanContextFromContext(ctx.Context()).TraceID()
 	histogram := ps.requestDuration.WithLabelValues(statusCode, method, routePath)
 
 	if traceID.IsValid() {
