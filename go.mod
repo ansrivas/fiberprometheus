@@ -3,7 +3,7 @@ module github.com/ansrivas/fiberprometheus/v2
 go 1.25.0
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.15
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/prometheus/client_golang v1.24.1
 	github.com/valyala/fasthttp v1.73.0
 	go.opentelemetry.io/otel v1.45.0
